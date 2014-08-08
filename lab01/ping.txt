@@ -1,0 +1,10 @@
+PING 10.32.143.211 (10.32.143.211) 65500(65528) bytes of data.
+65508 bytes from 10.32.143.211: icmp_seq=1 ttl=64 time=11.4 ms
+65508 bytes from 10.32.143.211: icmp_seq=2 ttl=64 time=11.4 ms
+65508 bytes from 10.32.143.211: icmp_seq=3 ttl=64 time=11.4 ms
+65508 bytes from 10.32.143.211: icmp_seq=4 ttl=64 time=11.4 ms
+65508 bytes from 10.32.143.211: icmp_seq=5 ttl=64 time=11.4 ms
+
+--- 10.32.143.211 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4006ms
+rtt min/avg/max/mdev = 11.419/11.425/11.444/0.068 ms

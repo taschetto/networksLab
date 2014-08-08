@@ -1,0 +1,52 @@
+1.	IP	10.32.143.212
+	Mask	255.255.255.0
+
+2.	Classe de endereço: A (máscara padrão = 255.0.0.0)
+
+	IP	00000010.00100000.10001111.11010100	10.32.143.212
+	DefMask	11111111.00000000.00000000.00000000	255.0.0.0
+	Network	00000010.00000000.00000000.00000000	10.0.0.0
+
+	Mask	11111111.11111111.11111111.00000000	255.255.255.0
+	Subnet	00000010.00100000.10001111.00000000     10.32.143.0
+
+	BCast	00000010.00100000.10001111.11111111     10.32.143.255
+	Host	00000000.00000000.00000000.11010100	0.0.0.212
+
+	Total Subnets: 2^16 bits = 65536 (o primeiro octeto é a máscara de rede)
+	Total Hosts: 2^8 bits = 256 - 2 = 254 (diminui endereço da rede e endereço de brodcast)
+
+3.	
+	Ethernet Header
+		Source (6 bytes)
+		Destination (6 bytes)
+		Type (2 bytes)
+
+	ARP
+		Hardware Type (2)
+		Protocol Type (2)
+		Hardware Size (1)
+		Protocol Size (1)
+		Opcode (2)
+		Sender MAC Address (6)
+		Sender IP Address (4)
+		Target MAC Address (6)
+		Target IP Address (4)
+
+	IP
+		Version (1)
+		Total Length (1)
+		Differentiated Services Field (1)
+		Total Length (2)
+		Identification (2)
+		Flags (1)
+		Fragment offset (2)
+		Time to live (1)
+		Protocol (1)
+		Header checksum (2)
+		Source (4)
+		Destination (4)
+		Source GeoIP (4)
+		Destination GeoIP (4)
+
+4.
