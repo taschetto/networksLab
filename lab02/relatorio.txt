@@ -1,0 +1,70 @@
+Laboratório de Redes - Tarefa 2
+
+Nome: Guilherme Taschetto
+Data: 15/08/2014
+
+1. Sim. É possível utilizar um flood ping para realizar o ataque. O comando utilizado foi:
+
+	$ sudo ping -b -f -s 1472 10.32.143.255
+
+	Onde:
+
+		-b		Permite executar o ping em um endereço de broadcast.
+		-f		Execute o ping no modo 'flood', onde serão disparados diversos pacotes em sequência sem realizar a recepção dos retornos e em um intervalo de tempo muito pequeno.
+		-s		Define o tamanho do pacote em 1472 bytes.
+
+	Resultado:
+
+		PING 10.32.143.255 (10.32.143.255) 1472(1500) bytes of data.
+		............................................................................................................................................................................................................................................................
+		--- 10.32.143.255 ping statistics ---
+		252 packets transmitted, 0 received, 100% packet loss, time 3020ms
+
+	Em 3 segundos, 252 pacotes foram transmitidos para a rede, caraterizando o flood.
+
+2. Para adicionar uma nova rota à tabela de roteamento da máquina foi utilizado o seguinte comando:
+
+	$ sudo route add -net 200.17.94.0/24 gw 10.32.143.169
+
+	Onde:
+
+		-net	Indica que o roteamento será para um endereço de rede, junto de sua máscara (alternativamente ao parâmetro -host).
+		gw		Indica o endereço IP do gateway para o destino especificado.
+
+	Após a execução, foi listada a tabela de roteamento:
+
+	$ route -n
+
+	Kernel IP routing table
+	Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+	0.0.0.0         10.32.143.1     0.0.0.0         UG    0      0        0 eth3
+	10.32.143.0     0.0.0.0         255.255.255.0   U     1      0        0 eth3
+	200.17.94.0     10.32.143.169   255.255.255.0   UG    0      0        0 eth3
+
+Em seguida é feita a tentativa do ping no endereço 200.17.94.15, sem sucesso:
+
+	$ ping 200.17.94.15
+
+	PING 200.17.94.15 (200.17.94.15) 56(84) bytes of data.
+	^C
+	--- 200.17.94.15 ping statistics ---
+	11 packets transmitted, 0 received, 100% packet loss, time 10079ms
+
+O pacote ICMP pode ser conferido no sniffer Wireshark:
+
+	2	0.009676000	10.32.143.225	200.17.94.15	ICMP	98	Echo (ping) request  id=0x12ca, seq=23/5888, ttl=64
+
+O ping não resolve. Este comportamento ocorreu pois a máquina 10.32.143.0 não é um roteador e, por isso, descarta os pacotes. Uma possível solução é o uso de ICMP redirects, onde a máquina acessada como um roteador informa à contra-parte que deve ser utilizado um outro gateway - no caso, o que está configurado na tabela de roteamento da própria máquina. Para verificar se o ICMP redirect está habilitado:
+
+$ sudo sysctl -a | grep redirect
+
+	...
+	net.ipv4.conf.eth3.accept_redirects = 1
+	net.ipv4.conf.eth3.secure_redirects = 1
+	net.ipv4.conf.eth3.send_redirects = 1
+	...
+
+Entretanto, não conseguimos fazer funcionar no laboratório. Não visualizamos os pacotes ICMP Redirect no Wireshark.
+
+3. Não houve tempo para testar o arpspoofing e entender o ataque.
+
