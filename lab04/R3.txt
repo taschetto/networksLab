@@ -1,0 +1,66 @@
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+Connected to Dynamips VM "R3" (ID 4, type c3600) - Console port
+
+enable
+% Please answer 'yes' or 'no'.
+Would you like to enter the initial configuration dialog? [yes/no]: no
+
+
+Press RETURN to get started!
+
+
+*Mar  1 00:00:02.451: %LINEPROTO-5-UPDOWN: Line protocol on Interface VoIP-Null0, changed state to up
+*Mar  1 00:00:05.451: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+*Mar  1 00:00:08.451: %LINK-3-UPDOWN: Interface FastEthernet1/0, changed state to up
+*Mar  1 00:00:11.451: %LINK-3-UPDOWN: Interface FastEthernet2/0, changed state to up
+*Mar  1 00:00:14.451: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+*Mar  1 00:00:14.451: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet1/0, changed state to up
+*Mar  1 00:00:14.451: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet2/0, changed state to up
+*Mar  1 00:11:26.775: %SYS-5-RESTART: System restarted --
+Cisco IOS Software, 3600 Software (C3640-IS-M), Version 12.3(14)T7, RELEASE SOFTWARE (fc2)
+Technical Support: http://www.cisco.com/techsupport
+Copyright (c) 1986-2006 by Cisco Systems, Inc.
+Compiled Wed 22-Mar-06 21:46 by pwade
+*Mar  1 00:11:26.779:
+Router> %SNMP-5-COLDSTART: SNMP agent on host Router is undergoing a cold start
+*Mar  1 00:11:28.659: %LINK-5-CHANGED: Interface FastEthernet0/0, changed state to administratively down
+*Mar  1 00:11:28.659: %LINK-5-CHANGED: Interface FastEthernet1/0, changed state to administratively down
+*Mar  1 00:11:28.659: %LINK-5-CHANGED: Interface FastEthernet2/0, changed state to administratively down
+*Mar  1 00:11:29.659: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to down
+*Mar  1 00:11:29.659: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet1/0, changed state to down
+*Mar  1 00:11:29.659: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet2/0, changed state to down
+Router>enable
+Router#config term
+Enter configuration commands, one per line.  End with CNTL/Z.
+Router(config)#int f0/0
+Router(config-if)#ip address 192.168.3.1 255.255.255.0
+Router(config-if)#no shutdown
+Router(config-if)#
+*Mar  1 00:11:54.891: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+*Mar  1 00:11:55.891: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+Router(config-if)#int f1/0
+Router(config-if)#ip address 192.168.4.2 255.255.255.0
+Router(config-if)#no shutdown
+Router(config-if)#
+*Mar  1 00:12:33.539: %LINK-3-UPDOWN: Interface FastEthernet1/0, changed state to up
+*Mar  1 00:12:34.539: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet1/0, changed state to up
+Router(config-if)#int f2/0
+Router(config-if)#ip address 192.168.5.2
+% Incomplete command.
+
+Router(config-if)#ip address 192.168.5.2 255.255.255.0
+Router(config-if)#no shutdown
+Router(config-if)#
+*Mar  1 00:13:23.227: %LINK-3-UPDOWN: Interface FastEthernet2/0, changed state to up
+*Mar  1 00:13:24.227: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet2/0, changed state to up
+Router(config-if)#
+Router(config-if)#
+Router#write
+Building configuration...
+[OK]
+Router#
+*Mar  1 00:13:27.147: %SYS-5-CONFIG_I: Configured from console by console
+Router#
+
