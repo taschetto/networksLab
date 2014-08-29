@@ -1,0 +1,318 @@
+<<html lang="pt-br">
+    <meta charset="utf-8" />html>
+<body>
+<h1 id="laboratorio-de-redes-tarefa-3">Laboratório de Redes - Tarefa 3</h1>
+<h2 id="nome-guilherme-taschetto">Nome: Guilherme Taschetto</h2>
+<p>Data: 22/08/2014</p>
+<h2 id="captura-e-analise-de-pacotes-utilizando-a-ferramenta-tcpdump">Captura e análise de pacotes utilizando a ferramenta <code>tcpdump</code></h2>
+<h3 id="observacao-todos-os-valores-numericos-estao-em-base-hexadecimal-a-menos-que-especificado">Observação: todos os valores numéricos estão em base hexadecimal a menos que especificado.</h3>
+<h3 id="configuracoes-de-rede">Configurações de Rede</h3>
+<pre><code>labredes@labredes-OptiPlex-3010 lab03 (master) $ ifconfig
+...
+eth3      Link encap:Ethernet  HWaddr a4:1f:72:f5:90:8f  
+          inet addr:10.32.143.225  Bcast:10.32.143.255  Mask:255.255.255.0
+          inet6 addr: fe80::a61f:72ff:fef5:908f/64 Scope:Link
+...
+</code></pre>
+
+<p>Ou seja:</p>
+<table>
+<thead>
+<tr>
+<th align="left">MAC local</th>
+<th align="left">IPv4 local</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>a4:1f:72:f5:90:8f</code></td>
+<td align="left"><code>10.32.143.225</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="pacote-1-ethernet-encapsulando-arp">Pacote #1: Ethernet encapsulando ARP</h2>
+<pre><code>17:52:03.488954 ARP, Request who-has labredes-OptiPlex-3015.local tell labredes-OptiPlex-3027.local, length 46
+0x0000:  a41f 72f5 908f a41f 72f5 9080 0806 0001  ..r.....r.......
+0x0010:  0800 0604 0001 a41f 72f5 9080 0a20 8fa9  ........r.......
+0x0020:  0000 0000 0000 0a20 8fe1 0000 0000 0000  ................
+0x0030:  0000 0000 0000 0000 0000 0000            ............
+</code></pre>
+
+<h3 id="ethernet">Ethernet</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th align="right">Tamanho (bytes)</th>
+<th align="left">Conteúdo</th>
+<th align="left">Comentário</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">MAC Target</td>
+<td align="right">6</td>
+<td align="left"><code>a4:1f:72:f5:90:8f</code></td>
+<td align="left">Endereço de hardware (MAC) destino.</td>
+</tr>
+<tr>
+<td align="left">Mac Source</td>
+<td align="right">6</td>
+<td align="left"><code>a4:1f:72:f5:90:80</code></td>
+<td align="left">Endereço de hardware (MAC) origem.</td>
+</tr>
+<tr>
+<td align="left">Tipo</td>
+<td align="right">2</td>
+<td align="left"><code>0806</code></td>
+<td align="left">O valor indica que há um pacote ARP encapsulado neste pacote Ethernet.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="arp">ARP</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th align="right">Tamanho (bytes)</th>
+<th align="left">Conteúdo</th>
+<th align="left">Comentário</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Hardware Address Type</td>
+<td align="right">2</td>
+<td align="left"><code>0001</code></td>
+<td align="left">O valor indica Ethernet para protocolo de rede.</td>
+</tr>
+<tr>
+<td align="left">Protocol Address Type</td>
+<td align="right">2</td>
+<td align="left"><code>0800</code></td>
+<td align="left">O valor indica IPv4 para protocolo de endereçamento (<em>internetworking</em>).</td>
+</tr>
+<tr>
+<td align="left">Hardware Address Length</td>
+<td align="right">1</td>
+<td align="left"><code>06</code></td>
+<td align="left">Comprimento esperado para um endereço MAC (Ethernet).</td>
+</tr>
+<tr>
+<td align="left">Protocol Address Length</td>
+<td align="right">1</td>
+<td align="left"><code>04</code></td>
+<td align="left">Comprimento esperado para um endereço IPv4.</td>
+</tr>
+<tr>
+<td align="left">Operation</td>
+<td align="right">2</td>
+<td align="left"><code>0001</code></td>
+<td align="left">O valor indica que o pacote é um ARP REQUEST.</td>
+</tr>
+<tr>
+<td align="left">Source Hardware Address</td>
+<td align="right">6</td>
+<td align="left"><code>a4:1f:72:f5:90:80</code></td>
+<td align="left">Endereço de harware (MAC) origem (confere com o listado no pacote Ethernet).</td>
+</tr>
+<tr>
+<td align="left">Source Protocol Address</td>
+<td align="right">4</td>
+<td align="left"><code>10.32.143.169</code></td>
+<td align="left">Endereço IPv4 origem do ARP REQUEST.</td>
+</tr>
+<tr>
+<td align="left">Target Hardware Address</td>
+<td align="right">6</td>
+<td align="left"><code>00:00:00:00:00:00</code></td>
+<td align="left">Como a operação é um ARP REQUEST, este campo é zero.</td>
+</tr>
+<tr>
+<td align="left">Target Protocol Address</td>
+<td align="right">4</td>
+<td align="left"><code>10.32.143.225</code></td>
+<td align="left">Endereço IPv4 destino do ARQ REQUEST.</td>
+</tr>
+</tbody>
+</table>
+<p>Portanto, chego a conclusão de que o pacote analisado é um ARP REQUEST que minha máquina recebeu da máquina IPv4 <code>10.32.143.169</code>.</p>
+<hr />
+<h2 id="pacote-2-ethernet-encapsulando-ip-encapsulando-icmp">Pacote #2: Ethernet encapsulando IP encapsulando ICMP</h2>
+<pre><code>17:52:19.082497 IP labredes-OptiPlex-3015.local &gt; kamus.pucrsnet.br: ICMP labredes-OptiPlex-3015.local udp port 50943 unreachable, length 154
+    0x0000:  0001 0223 eaa6 a41f 72f5 908f 0800 45c0  ...#....r.....E.
+    0x0010:  00ae 1f0b 0000 4001 8641 0a20 8fe1 0a28  ......@..A.....(
+    0x0020:  301a 0303 d1cf 0000 0000 4500 0092 5126  0.........E...Q&amp;
+    0x0030:  0000 7d11 17f2 0a28 301a 0a20 8fe1 0035  ..}....(0......5
+    0x0040:  c6ff 007e abd1 e356 8583 0001 0000 0001  ...~...V........
+    0x0050:  0000 0332 3037 0331 3433 0233 3202 3130  ...207.143.32.10
+    0x0060:  0769 6e2d 6164 6472 0461 7270 6100 000c  .in-addr.arpa...
+    0x0070:  0001 0231 3007 696e 2d61 6464 7204 6172  ...10.in-addr.ar
+    0x0080:  7061 0000 0600 0100 000e 1000 2f05 6b61  pa........../.ka
+    0x0090:  6d75 7308 7075 6372 736e 6574 0262 7200  mus.pucrsnet.br.
+    0x00a0:  0561 646d 696e c04d 0034 4dbd 0000 0384  .admin.M.4M.....
+    0x00b0:  0000 0258 0001 5180 0000 0e10            ...X..Q.....
+</code></pre>
+
+<h3 id="ethernet_1">Ethernet</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th align="right">Tamanho (bytes)</th>
+<th align="left">Conteúdo</th>
+<th align="left">Comentário</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">MAC Target</td>
+<td align="right">6</td>
+<td align="left"><code>00:01:02:23:ea:a6</code></td>
+<td align="left">Endereço de hardware (MAC) destino.</td>
+</tr>
+<tr>
+<td align="left">Mac Source</td>
+<td align="right">6</td>
+<td align="left"><code>a4:1f:72:f5:90:8f</code></td>
+<td align="left">Endereço de hardware (MAC) origem.</td>
+</tr>
+<tr>
+<td align="left">Tipo</td>
+<td align="right">2</td>
+<td align="left"><code>0800</code></td>
+<td align="left">O valor que há um pacote IP encapsulado neste pacote Ethernet.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ip">IP</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th align="right">Tamanho (bytes)</th>
+<th align="left">Conteúdo</th>
+<th align="left">Comentário</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Version</td>
+<td align="right">4 bits</td>
+<td align="left"><code>4</code></td>
+<td align="left">O valor indica versão IPv4.</td>
+</tr>
+<tr>
+<td align="left">Internet Header Length</td>
+<td align="right">4 bits</td>
+<td align="left"><code>5</code></td>
+<td align="left">Indica tamanho total do header IP em 5 x 32 = 160 bits.</td>
+</tr>
+<tr>
+<td align="left">Service Type</td>
+<td align="right">1</td>
+<td align="left"><code>c0</code></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Total Length</td>
+<td align="right">2</td>
+<td align="left"><code>00ae</code></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Identification</td>
+<td align="right">2</td>
+<td align="left"><code>1f0b</code></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Flags</td>
+<td align="right">3 bits</td>
+<td align="left"><code>0</code></td>
+<td align="left">Sem uso de flags.</td>
+</tr>
+<tr>
+<td align="left">Fragment Offset</td>
+<td align="right">13 bits</td>
+<td align="left"><code>000</code></td>
+<td align="left">Indica que o pacote não é um fragmento.</td>
+</tr>
+<tr>
+<td align="left">Time To Live</td>
+<td align="right">1</td>
+<td align="left"><code>40</code></td>
+<td align="left">TTL de 64 hops.</td>
+</tr>
+<tr>
+<td align="left">Protocol</td>
+<td align="right">1</td>
+<td align="left"><code>01</code></td>
+<td align="left">Indica o uso do protocolo ICMP.</td>
+</tr>
+<tr>
+<td align="left">Header Checksum</td>
+<td align="right">2</td>
+<td align="left"><code>8641</code></td>
+<td align="left">Checksum do header.</td>
+</tr>
+<tr>
+<td align="left">Source Address</td>
+<td align="right">4</td>
+<td align="left"><code>10.32.143.225</code></td>
+<td align="left">Endereço IP origem (máquina local).</td>
+</tr>
+<tr>
+<td align="left">Destination Address</td>
+<td align="right">4</td>
+<td align="left"><code>10.40.48.26</code></td>
+<td align="left">Endereço IP destino.</td>
+</tr>
+<tr>
+<td align="left">Options</td>
+<td align="right">4</td>
+<td align="left"><code>---</code></td>
+<td align="left">Como o IHL não é maior do que 5, o campo options não é utilizado.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="icmp">ICMP</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Campo</th>
+<th align="right">Tamanho (bytes)</th>
+<th align="left">Conteúdo</th>
+<th align="left">Comentário</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Type</td>
+<td align="right">1</td>
+<td align="left"><code>03</code></td>
+<td align="left">Indica mensagem ICMP "Destination Unreachable".</td>
+</tr>
+<tr>
+<td align="left">Code</td>
+<td align="right">1</td>
+<td align="left"><code>03</code></td>
+<td align="left">Indica mensagem ICMP "Destination Unreachable".</td>
+</tr>
+<tr>
+<td align="left">Checksum</td>
+<td align="right">2</td>
+<td align="left"><code>d1cf</code></td>
+<td align="left">Checksum do header.</td>
+</tr>
+<tr>
+<td align="left">Other information</td>
+<td align="right">4</td>
+<td align="left"><code>0000</code></td>
+<td align="left">Indica que neste header não há mais informações.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Não houve tempo de continuar a análise para este pacote e para os protocols TCP e UDP.</strong></p>
+</body></html>
