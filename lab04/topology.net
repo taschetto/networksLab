@@ -1,0 +1,214 @@
+autostart = False
+version = 0.8.7
+[127.0.0.1:7200]
+    workingdir = /tmp
+    udp = 10001
+    [[3640]]
+        image = /home/guilherme/projects/networksLab/lab04/c3640-is-mz.123-14.T7.image
+        idlepc = 0x605f1ed8
+        sparsemem = True
+        ghostios = True
+        chassis = 3640
+    [[ROUTER R4]]
+        model = 3640
+        console = 2110
+        aux = 2510
+        slot0 = NM-1FE-TX
+        f0/0 = nio_gen_eth:eth0
+        slot1 = NM-1FE-TX
+        f1/0 = R1 f0/0
+        cnfg = R4.recovered.cfg
+        x = -300.0
+        y = -116.0
+        z = 1.0
+    [[ROUTER R5]]
+        model = 3640
+        console = 2111
+        aux = 2511
+        slot0 = NM-1FE-TX
+        f0/0 = R3 f1/0
+        slot1 = NM-1FE-TX
+        f1/0 = SW1 1
+        cnfg = R5.recovered.cfg
+        x = 119.0
+        y = -8.0
+        z = 1.0
+    [[ROUTER R1]]
+        model = 3640
+        console = 2107
+        aux = 2507
+        slot0 = NM-1FE-TX
+        f0/0 = R4 f1/0
+        slot1 = NM-1FE-TX
+        f1/0 = R2 f0/0
+        cnfg = R1.recovered.cfg
+        x = -5.0
+        y = -118.0
+        z = 1.0
+    [[ROUTER R2]]
+        model = 3640
+        console = 2108
+        aux = 2508
+        slot0 = NM-1FE-TX
+        f0/0 = R1 f1/0
+        slot1 = NM-1FE-TX
+        f1/0 = R3 f0/0
+        cnfg = R2.recovered.cfg
+        x = 182.0
+        y = -264.0
+        z = 1.0
+    [[ROUTER R3]]
+        model = 3640
+        console = 2109
+        aux = 2509
+        slot0 = NM-1FE-TX
+        f0/0 = R2 f1/0
+        slot1 = NM-1FE-TX
+        f1/0 = R5 f0/0
+        slot2 = NM-1FE-TX
+        f2/0 = SW2 1
+        cnfg = R3.recovered.cfg
+        x = 344.0
+        y = -113.0
+        z = 1.0
+    [[ETHSW SW1]]
+        1 = access 1 R5 f1/0
+        x = 109.5
+        y = 126.0
+        z = 1.0
+    [[ETHSW SW2]]
+        1 = access 1 R3 f2/0
+        x = 577.5
+        y = -100.0
+        z = 1.0
+[GNS3-DATA]
+    configs = .
+    [[NOTE 1]]
+        text = "192.168.6.0"
+        x = 150.0
+        y = 75.5
+        color = "#3c3c3c"
+    [[NOTE 2]]
+        text = "192.168.5.0"
+        x = 450.0
+        y = -116.5
+        color = "#3c3c3c"
+    [[NOTE 3]]
+        text = "192.168.4.0"
+        x = 182.0
+        y = -64.5
+        color = "#3c3c3c"
+    [[NOTE 4]]
+        text = "192.168.3.0"
+        x = 299.0
+        y = -207.5
+        color = "#3c3c3c"
+    [[NOTE 5]]
+        text = "192.168.2.0"
+        x = 27.0
+        y = -212.5
+        color = "#3c3c3c"
+    [[NOTE 6]]
+        text = "192.168.1.0"
+        x = -164.0
+        y = -115.5
+        color = "#3c3c3c"
+    [[Cloud C3]]
+        symbol = Host
+        x = -257.5
+        y = -164.5
+        z = 1.0
+    [[Cloud C2]]
+        symbol = Host
+        x = -255.5
+        y = -164.5
+        z = 1.0
+    [[NOTE 7]]
+        text = "nio_gen_eth:eth0"
+        x = 73.7218307558
+        y = -4.58045932257
+        interface = C1 nio_gen_eth:eth0
+        color = "#3c3c3c"
+    [[Cloud C1]]
+        x = -326.5
+        y = 8.0
+        z = 1.0
+        connections = R4:f0/0:nio_gen_eth:eth0
+    [[NOTE 8]]
+        text = "1"
+        x = -4.48241608305
+        y = 14.8140808789
+        interface = SW2 1
+        color = "#3c3c3c"
+    [[NOTE 9]]
+        text = "1"
+        x = 37.6842362161
+        y = -23.9403193797
+        interface = SW1 1
+        color = "#3c3c3c"
+    [[NOTE 10]]
+        text = "f1/0\n.2"
+        x = -25.1842362161
+        y = 38.9403193797
+        interface = R5 f1/0
+        color = "#3c3c3c"
+    [[NOTE 11]]
+        text = "f0/0\n.1"
+        x = 69.2473255998
+        y = 5.08458138676
+        interface = R5 f0/0
+        color = "#3c3c3c"
+    [[NOTE 12]]
+        text = "f0/0"
+        x = 38.7781692442
+        y = 61.5804593226
+        interface = R4 f0/0
+        color = "#3c3c3c"
+    [[NOTE 13]]
+        text = "f1/0\n.2"
+        x = 72.9990807556
+        y = 21.7288197915
+        interface = R4 f1/0
+        color = "#3c3c3c"
+    [[NOTE 14]]
+        text = "f2/0\n.2"
+        x = 69.9824160831
+        y = 31.1859191211
+        interface = R3 f2/0
+        color = "#3c3c3c"
+    [[NOTE 15]]
+        text = "f1/0\n.2"
+        x = -15.2473255998
+        y = 46.9154186132
+        interface = R3 f1/0
+        color = "#3c3c3c"
+    [[NOTE 16]]
+        text = "f0/0\n.1"
+        x = -37.2602233206
+        y = -5.27341803343
+        interface = R3 f0/0
+        color = "#3c3c3c"
+    [[NOTE 17]]
+        text = "f1/0\n.2"
+        x = 68.2602233206
+        y = 3.27341803343
+        interface = R2 f1/0
+        color = "#3c3c3c"
+    [[NOTE 18]]
+        text = "f0/0\n.1"
+        x = -15.528641812
+        y = 57.6159449441
+        interface = R2 f0/0
+        color = "#3c3c3c"
+    [[NOTE 19]]
+        text = "f1/0\n.2"
+        x = 64.528641812
+        y = -2.61594494411
+        interface = R1 f1/0
+        color = "#3c3c3c"
+    [[NOTE 20]]
+        text = "f0/0\n.1"
+        x = -32.9990807556
+        y = 30.2711802085
+        interface = R1 f0/0
+        color = "#3c3c3c"
