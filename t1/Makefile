@@ -6,7 +6,7 @@ OBJ =
 
 all: $(TARGET)
 
-spoofer: spoofer.o $(OBJ)
+$(TARGET): $(TARGET:%=%.o) $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
 %.o : %.c $(DEPS)
