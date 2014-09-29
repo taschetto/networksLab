@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -I.
 TARGET = spoofer 
-DEPS = 
-OBJ = 
+DEPS = defines.h helpers.h packets.h
+OBJ = helpers.c packets.c
 
 all: $(TARGET)
 

@@ -13,52 +13,8 @@
 #include <arpa/inet.h>          // manipulação de endereços IP
 #include <netinet/in_systm.h>   // tipos de dados (???)
 
-#define BUFFSIZE 1518
-
-#define HADDR 0
-#define PADDR 1
-
-#define HLEN 6
-#define PLEN 4
-
-#define P_IPv4 0x0800
-#define P_ARP  0x0806
-
-typedef unsigned char  BYTE;
-typedef unsigned short WORD;
-typedef unsigned int   DWORD;
-
-typedef struct
-{
-  BYTE destination[HLEN];
-  BYTE source[HLEN];
-  DWORD etherType;
-} Ethernet;
-
-typedef struct
-{
-  WORD hType;
-  WORD pType;
-  BYTE hLen;
-  BYTE pLen;
-  WORD operation;
-  BYTE senderHAddr[HLEN];
-  BYTE senderPAddr[PLEN];
-  BYTE targetHAddr[HLEN];
-  BYTE targetPAddr[PLEN];
-} ARP;
-
-void MakeEthernet(BYTE*, Ethernet*);
-void PrintEthernet(Ethernet);
-
-void MakeARP(BYTE*, ARP*);
-void PrintARP(ARP);
-
-void MakeAddr(BYTE*, BYTE*, BYTE);
-
-WORD MakeWord(BYTE*);
-DWORD MakeDWord(BYTE*);
-void AddrToStr(char*, BYTE*, BYTE);
+#include "packets.h"
+#include "helpers.h"
 
 void SIGINTHandler(int);
 
@@ -101,6 +57,12 @@ int main(int argc, char** argv)
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
 
 	unsigned char buff[BUFFSIZE];
+
+  ioctl(sockd, SIOCGIFHWADDR, &ifr);
+
+  char hAddr[17];
+  AddrToStr(hAddr, (BYTE*)&ifr.ifr_hwaddr.sa_data[0], HADDR);
+  printf("Capturing interface %s (%s)...\n", ifr.ifr_name, hAddr);
  
   while (run) 
   {
@@ -108,113 +70,34 @@ int main(int argc, char** argv)
 
     Ethernet ethernet;
     MakeEthernet(&buff[0], &ethernet);
-    //PrintEthernet(ethernet);
 
-    switch(ethernet.etherType)
+    if (ethernet.etherType == P_ARP)
     {
-      case P_ARP:
+      ARP arp;
+      MakeARP(&buff[14], &arp);
+
+      if (arp.operation == 2) // ARP Request
       {
-        ARP arp;
-        MakeARP(&buff[14], &arp);
-        PrintEthernet(ethernet);
         PrintARP(arp);
-      } break;
+
+        if (!AreEqual(&arp.targetHAddr[0], &ifr.ifr_hwaddr.sa_data[0], HLEN) && !AreEqual(&arp.senderHAddr[0], &ifr.ifr_hwaddr.sa_data[0], HLEN))
+        {
+          printf("Received ARP REQUEST targeted to another machine!\n");
+        }
+      }
     }
 	}
 
 	ifr.ifr_flags = flags;
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
 
-  printf("FINISH!");
+  printf("\nReturned interface flags to original value.\nFinished spoofing.\n");
 
   return 0;
 }
 
-void MakeEthernet(BYTE* by, Ethernet* packet)
-{
-  MakeAddr(&by[0], (*packet).destination, HLEN);
-  MakeAddr(&by[6], (*packet).source, HLEN);
-  (*packet).etherType = MakeWord(&by[12]);
-}
-
-void PrintEthernet(Ethernet packet)
-{
-  printf("------------ ETHERNET PACKET -----------\n");
-  char addr[17];
-  AddrToStr(addr, packet.destination, HADDR);
-	printf("Destination MAC: %s\n", addr);
-  AddrToStr(addr, packet.source, HADDR);
-	printf("     Source MAC: %s\n", addr);
-  printf("     Ether Type: %04X\n", packet.etherType);
-}
-
-void MakeARP(BYTE* by, ARP* packet)
-{
-  (*packet).hType = MakeWord(&by[0]);
-  (*packet).pType = MakeWord(&by[2]);
-  (*packet).hLen  = by[4];
-  (*packet).pLen  = by[5];
-  (*packet).operation = MakeWord(&by[6]);
-  MakeAddr(&by[8], (*packet).senderHAddr, HLEN);
-  MakeAddr(&by[14], (*packet).senderPAddr, PLEN);
-  MakeAddr(&by[18], (*packet).targetHAddr, HLEN);
-  MakeAddr(&by[24], (*packet).targetPAddr, PLEN);
-}
-
-void PrintARP(ARP packet)
-{
-  printf("-------------- ARP PACKET --------------\n");
-  printf("Hardware Type: %u\n", packet.hType);
-  printf("Protocol Type: %04X\n", packet.pType);
-  printf(" HAddr Length: %u\n", packet.hLen);
-  printf(" PAddr Length: %u\n", packet.pLen);
-  printf("    Operation: %u\n", packet.operation);
-  char hAddr[17], pAddr[15];
-  AddrToStr(hAddr, packet.senderHAddr, HADDR);
-  AddrToStr(pAddr, packet.senderPAddr, PADDR);
-  printf("          SHA: %s\n", hAddr);
-  printf("          SPA: %s\n", pAddr);
-  AddrToStr(hAddr, packet.targetHAddr, HADDR);
-  AddrToStr(pAddr, packet.targetPAddr, PADDR);
-  printf("          THA: %s\n", hAddr);
-  printf("          TPA: %s\n", pAddr);
-}
-
-void MakeAddr(BYTE* by, BYTE* addr, BYTE size)
-{
-  int n;
-  for (n = 0; n < size; n++)
-    addr[n] = by[n];
-}
-
-WORD MakeWord(BYTE* by)
-{
-  return (by[0] << 8) | by[1];
-}
-
-DWORD MakeDWord(BYTE* by)
-{
-  WORD wHi = MakeWord(&by[0]);
-  WORD wLo = MakeWord(&by[2]);
-
-  return (wHi << 16) | wLo;
-}
-
-void AddrToStr(char* str, BYTE* addr, BYTE type)
-{
-  switch (type)
-  {
-    case HADDR:
-      sprintf(str, "%02X:%02X:%02X:%02X:%02X:%02X", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-      break;
-    
-    case PADDR:
-      sprintf(str, "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
-      break;
-  }
-}
-
 void SIGINTHandler(int sig)
 {
+  printf("\nReceived signal to interrupt execution. Terminating...\n");
   run = 0;
 }
