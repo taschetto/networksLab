@@ -1,8 +1,8 @@
-CC = gcc
-CFLAGS = -Wall -I.
+CC = g++
+CFLAGS = -Wall -I. -std=c++11
 TARGET = spoofer 
-DEPS = defines.h helpers.h packets.h
-OBJ = helpers.c packets.c
+DEPS = defines.h helpers.h ethernet.h arp.h ip.h
+OBJ = helpers.cpp ethernet.cpp arp.cpp ip.cpp
 
 all: $(TARGET)
 

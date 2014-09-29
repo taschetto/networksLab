@@ -1,15 +1,20 @@
-#ifndef __HELPERS_H__
-#define __HELPERS_H__
+#pragma once
 
+#include <string>
 #include "defines.h"
 
-void MakeAddr(BYTE*, BYTE*, BYTE);
-WORD MakeWord(BYTE*);
-DWORD MakeDWord(BYTE*);
-void AddrToStr(char*, BYTE*, BYTE);
+void MakeMAC(const BYTE*, BYTE*);
+void MakeIP(const BYTE*, BYTE*);
 
-BYTE LoNibble(BYTE*);
-BYTE HiNibble(BYTE*);
+WORD MakeWord(const BYTE*);
+DWORD MakeDWord(const BYTE*);
 
-int AreEqual(BYTE*, BYTE*, BYTE);
-#endif
+std::string AddrToStr(const BYTE*, BYTE);
+
+std::string MACToStr(const BYTE*);
+std::string IPToStr(const BYTE*);
+
+BYTE LoNibble(const BYTE*);
+BYTE HiNibble(const BYTE*);
+
+int AreEqual(const BYTE*, const BYTE*, const BYTE);

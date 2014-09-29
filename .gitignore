@@ -20,4 +20,7 @@
 *.out
 *.app
 
+# Vim swap files
+*.swp
+
 t1/spoofer

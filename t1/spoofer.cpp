@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -7,14 +6,18 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <iostream>
+
 #include <net/if.h>             // ifr struct
 #include <netinet/ether.h>      // header ethernet
 #include <netinet/in.h>         // protocol definitions
 #include <arpa/inet.h>          // manipulação de endereços IP
 #include <netinet/in_systm.h>   // tipos de dados (???)
 
-#include "packets.h"
 #include "helpers.h"
+#include "ethernet.h"
+#include "arp.h"
+#include "ip.h"
 
 void SIGINTHandler(int);
 
@@ -24,20 +27,20 @@ int main(int argc, char** argv)
 {
   if (argc != 2)
   {
-    printf("Usage: spoofer <interface>\n");
+    std::cerr << "Usage: spoofer <interface>" << std::endl;
     exit(-1); 
   }
 
   if (signal(SIGINT, SIGINTHandler) == SIG_ERR)
   {
-    printf("Can't catch SIGINT.\n");
+    std::cerr << "Can't catch SIGINT." << std::endl;
     exit(-1);
   }
 
   int sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
   if (sockd < 0)
   {
-    printf("Socket creation failed: %s (errno=%u).\n", strerror(errno), errno);
+    std::cerr << "Socket creation failed: " << strerror(errno) << " (errno=" << errno << ")." << std::endl;
     exit(-1);
   }
 
@@ -46,9 +49,13 @@ int main(int argc, char** argv)
 
 	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
   {
-		printf("Control device %s failed: %s (errno=%u).", argv[2], strerror(errno), errno);
+    std::cerr << "Control device " << argv[1] << " failed: " << strerror(errno) << " (errno=" << errno << ")." << std::endl;
     exit(-1);
   }
+
+  ioctl(sockd, SIOCGIFHWADDR, &ifr);
+
+  std::cout << "Capturing interface " << ifr.ifr_name << " (" << MACToStr((BYTE*)ifr.ifr_hwaddr.sa_data) << ")..." << std::endl;
 
   short flags = ifr.ifr_flags;
 
@@ -57,32 +64,24 @@ int main(int argc, char** argv)
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
 
 	unsigned char buff[BUFFSIZE];
-
-  ioctl(sockd, SIOCGIFHWADDR, &ifr);
-
-  char hAddr[17];
-  AddrToStr(hAddr, (BYTE*)&ifr.ifr_hwaddr.sa_data[0], HADDR);
-  printf("Capturing interface %s (%s)...\n", ifr.ifr_name, hAddr);
  
   while (run) 
   {
     recv(sockd,(char *) &buff, sizeof(buff), 0x00);
 
-    Ethernet ethernet;
-    MakeEthernet(&buff[0], &ethernet);
+    Ethernet ethernet(&buff[0]);
 
     if (ethernet.etherType == P_ARP)
     {
-      ARP arp;
-      MakeARP(&buff[14], &arp);
+      Arp arp(&buff[14]);
 
       if (arp.operation == 2) // ARP Request
       {
-        PrintARP(arp);
+        std::cout << arp.ToString();
 
-        if (!AreEqual(&arp.targetHAddr[0], &ifr.ifr_hwaddr.sa_data[0], HLEN) && !AreEqual(&arp.senderHAddr[0], &ifr.ifr_hwaddr.sa_data[0], HLEN))
+        if (!AreEqual(&arp.targetHAddr[0], (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN) && !AreEqual(&arp.senderHAddr[0], (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN))
         {
-          printf("Received ARP REQUEST targeted to another machine!\n");
+          std::cout << "Received ARP REQUEST targeted to another machine!" << std::endl;
         }
       }
     }
@@ -91,13 +90,13 @@ int main(int argc, char** argv)
 	ifr.ifr_flags = flags;
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
 
-  printf("\nReturned interface flags to original value.\nFinished spoofing.\n");
+  std::cout << std::endl << "Returned interface flags to original value.\nFinished spoofing." << std::endl;
 
   return 0;
 }
 
 void SIGINTHandler(int sig)
 {
-  printf("\nReceived signal to interrupt execution. Terminating...\n");
+  std::cout << std::endl << "Received signal to interrupt execution. Terminating..." << std::endl;
   run = 0;
 }
