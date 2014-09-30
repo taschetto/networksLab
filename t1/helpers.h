@@ -17,4 +17,4 @@ std::string IPToStr(const BYTE*);
 BYTE LoNibble(const BYTE*);
 BYTE HiNibble(const BYTE*);
 
-int AreEqual(const BYTE*, const BYTE*, const BYTE);
+bool CompareIP(const BYTE*, const BYTE*);

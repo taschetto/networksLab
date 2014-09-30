@@ -63,14 +63,14 @@ BYTE HiNibble(const BYTE* by)
   return (by[0] & 0xF0) >> 4;
 }
 
-int AreEqual(const BYTE* by1, const BYTE* by2, const BYTE length)
+bool CompareIP(const BYTE* ip1, const BYTE* ip2)
 {
   int n;
-  for (n = 0; n < length; n++)
+  for (n = 0; n < PLEN; n++)
   {
-    if (by1[n] != by2[n])
-      return 0; 
+    if (ip1[n] != ip2[n])
+      return false;
   }
 
-  return 1;
+  return true;
 }
