@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <sstream>
 #include "ip.h"
 #include "helpers.h"
@@ -33,14 +34,14 @@ std::string Ip::ToString() const
   oss << "Type of Service: " << std::to_string(typeOfService) << std::endl;
   oss << "   Total Length: " << std::to_string(totalLength)   << std::endl;
   oss << " Identification: " << std::to_string(identification) << std::endl;
-  oss << "          Flags: " << std::hex << flags             << std::endl;
+  oss << "          Flags: " << std::setw(4) << std::hex << static_cast<int>(flags) << std::endl;
   oss << "Fragment Offset: " << std::to_string(fragmentOffset) << std::endl;
   oss << "   Time to live: " << std::to_string(timeToLive)    << std::endl;
   oss << "       Protocol: " << std::to_string(protocol)      << std::endl;
-  oss << "Header Checksum: " << std::hex << headerChecksum    << std::endl;
+  oss << "Header Checksum: " << std::setw(4) << std::hex << static_cast<int>(headerChecksum) << std::endl;
   oss << " Source Address: " << IPToStr(sourceAddr)           << std::endl;
   oss << " Target Address: " << IPToStr(targetAddr)           << std::endl;
-  oss << "        Options: " << std::hex << options           << std::endl;
+  oss << "        Options: " << std::setw(4) << std::hex << static_cast<int>(options) << std::endl;
   
   return oss.str();
 }

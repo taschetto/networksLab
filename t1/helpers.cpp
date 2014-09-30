@@ -46,9 +46,9 @@ std::string IPToStr(const BYTE ip[])
 {
   std::ostringstream oss;
 
-  oss << ip[0];
+  oss << static_cast<unsigned int>(ip[0]);
   for (int n = 1; n < PLEN; n++)
-    oss << '.' << ip[n];
+    oss << '.' << static_cast<unsigned int>(ip[n]);
 
   return oss.str();
 }

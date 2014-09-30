@@ -77,11 +77,12 @@ int main(int argc, char** argv)
 
       if (arp.operation == 2) // ARP Request
       {
-        std::cout << arp.ToString();
-
-        if (!AreEqual(&arp.targetHAddr[0], (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN) && !AreEqual(&arp.senderHAddr[0], (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN))
+        if (!AreEqual(arp.targetHAddr, (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN) && !AreEqual(arp.senderHAddr, (BYTE*)ifr.ifr_hwaddr.sa_data, HLEN) && !AreEqual(arp.senderHAddr, arp.targetHAddr, HLEN))
         {
           std::cout << "Received ARP REQUEST targeted to another machine!" << std::endl;
+
+          std::cout << ethernet.ToString();
+          std::cout << arp.ToString();
         }
       }
     }

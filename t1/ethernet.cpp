@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include "ethernet.h"
@@ -20,7 +21,7 @@ std::string Ethernet::ToString() const
   oss << "------------ ETHERNET PACKET -----------"   << std::endl;
   oss << "Destination MAC: " << MACToStr(destination) << std::endl;
   oss << "     Source MAC: " << MACToStr(source)      << std::endl;
-  oss << "     Ether Type: " << std::hex << etherType << std::endl;
+  oss << "     Ether Type: " << std::setw(4) << std::hex << etherType << std::endl;
 
   return oss.str();
 }

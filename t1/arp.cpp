@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <sstream>
 #include "arp.h"
 #include "helpers.h"
@@ -25,7 +26,7 @@ std::string Arp::ToString() const
   
   oss << "-------------- ARP PACKET --------------" << std::endl;
   oss << "Hardware Type: " << std::to_string(hType) << std::endl;
-  oss << "Protocol Type: " << std::hex << pType     << std::endl;
+  oss << "Protocol Type: " << std::setw(4) << std::hex << static_cast<int>(pType) << std::endl;
   oss << " HAddr Length: " << std::to_string(hLen)  << std::endl;
   oss << " PAddr Length: " << std::to_string(pLen)  << std::endl;
   oss << "    Operation: " << std::to_string(operation) << std::endl;
