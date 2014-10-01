@@ -1,13 +1,6 @@
-#include <cstring>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <string.h>
-#include <signal.h>
 #include <unistd.h>
-#include <errno.h>
-
-#include <iostream>
 
 #include <net/if.h>             // ifr struct
 #include <netinet/ether.h>      // header ethernet
@@ -15,26 +8,19 @@
 #include <arpa/inet.h>          // manipulação de endereços IP
 #include <netinet/in_systm.h>   // tipos de dados (???)
 
+#include <csignal>
+#include <cstring>
+#include <iostream>
+
+#include "colors.h"
 #include "helpers.h"
 #include "ethernet.h"
 #include "arp.h"
 #include "ip.h"
 
-namespace Colors
-{
-  const std::string red = "\033[1;31m";
-  const std::string green = "\033[1;32m";
-  const std::string yellow = "\033[1;33m";
-  const std::string blue = "\033[1;34m";
-  const std::string reset = "\033[0m";
-}
-
 using namespace Colors;
 
 void SIGINTHandler(int);
-void ok();
-void error();
-
 int run = 1;
 
 int main(int argc, char** argv)
@@ -128,7 +114,7 @@ int main(int argc, char** argv)
   }
 
   ok();
-  std::cout << std::endl << "Capturing interface " << ifr.ifr_name << " (" << MACToStr(intMac) << " :: " << IPToStr(intIp) << ")..." << std::endl;
+  std::cout << std::endl << blue << "Capturing interface " << ifr.ifr_name << " (" << MACToStr(intMac) << " :: " << IPToStr(intIp) << ")..." << reset << std::endl;
  
 	unsigned char buff[BUFFSIZE];
 
@@ -144,7 +130,7 @@ int main(int argc, char** argv)
 
       if (arp.operation == 1 && !CompareIP(arp.targetPAddr, intIp))
       {
-        std::cout << blue << "Received ARP Request: attack!" << reset << std::endl << arp.ToString() << std::endl;
+        std::cout << blue << "Received ARP Request:" << reset << std::endl << arp.ToString() << std::endl;
 
         Arp reply = arp;
         reply.operation = 2;
@@ -187,13 +173,3 @@ void SIGINTHandler(int sig)
   run = 0;
 }
 
-void ok()
-{
-  std::cout << green << " [ OK ]" << reset << std::endl;
-}
-
-void error()
-{
-  std::cout << red << " [ ERROR ]" << reset << std::endl << std::endl;
-  std::cout << strerror(errno) << " (errno=" << errno << ")." << std::endl;
-}

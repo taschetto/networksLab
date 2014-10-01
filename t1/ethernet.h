@@ -1,7 +1,7 @@
 #pragma once
 
-#include "defines.h"
 #include <string>
+#include "defines.h"
 
 class Ethernet
 {

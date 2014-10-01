@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+
 #include "ethernet.h"
 #include "helpers.h"
 

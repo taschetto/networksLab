@@ -3,6 +3,9 @@
 #include <string>
 #include "defines.h"
 
+void ok();
+void error();
+
 void MakeMAC(const BYTE*, BYTE*);
 void MakeIP(const BYTE*, BYTE*);
 
