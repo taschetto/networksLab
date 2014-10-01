@@ -6,6 +6,7 @@
 class Ethernet
 {
 public:
+  Ethernet() {}
   Ethernet(BYTE*);
   ~Ethernet();
 

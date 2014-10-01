@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 -Wall -I.
+CFLAGS = -std=c++11 -pthread -Wall -I.
 TARGET = spoofer 
 DEPS = defines.h helpers.h ethernet.h arp.h ip.h
 OBJ = helpers.o ethernet.o arp.o ip.o

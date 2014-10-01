@@ -11,6 +11,8 @@
 #include <csignal>
 #include <cstring>
 #include <iostream>
+#include <mutex>
+#include <thread>
 
 #include "colors.h"
 #include "helpers.h"
@@ -21,7 +23,28 @@
 using namespace Colors;
 
 void SIGINTHandler(int);
+
+std::mutex runMutex;
 int run = 1;
+
+void attack(const Arp& reply)
+{
+  Ethernet ethernet;
+  memcpy(ethernet.destination, reply.targetHAddr, HLEN);
+  memcpy(ethernet.source, reply.senderHAddr, HLEN);
+  ethernet.etherType = 0x0806;
+
+  std::cout << red << "Hello from thread ATTACK!" << reset << std::endl;
+  std::cout << ethernet.ToString() << std::endl;
+  std::cout << reply.ToString() << std::endl;
+  
+  while(run)
+  {
+    runMutex.lock();
+    std::cout << yellow << '.' << reset;
+    runMutex.unlock();
+  }
+}
 
 int main(int argc, char** argv)
 {
@@ -33,6 +56,7 @@ int main(int argc, char** argv)
 
   BYTE intMac[HLEN];
   BYTE intIp[PLEN];
+  std::thread* attackThread = nullptr;
 
   std::cout << "Capture SIGINT...";
 
@@ -103,7 +127,6 @@ int main(int argc, char** argv)
   ok();
   std::cout << "Set interface to PROMISCUOUS mode... ";
 
-  short flags = ifr.ifr_flags;
 	ifr.ifr_flags |= IFF_PROMISC;
 
 	if (ioctl(sockd, SIOCSIFFLAGS, &ifr) < 0)
@@ -128,7 +151,7 @@ int main(int argc, char** argv)
     {
       Arp arp(&buff[14]);
 
-      if (arp.operation == 1 && !CompareIP(arp.targetPAddr, intIp))
+      //if (arp.operation == 1 && !CompareIP(arp.targetPAddr, intIp))
       {
         std::cout << blue << "Received ARP Request:" << reset << std::endl << arp.ToString() << std::endl;
 
@@ -144,14 +167,17 @@ int main(int argc, char** argv)
         memcpy(reply.targetPAddr, reply.senderPAddr, PLEN);
         memcpy(reply.senderPAddr, ipSwap, PLEN);
 
-        std::cout << blue << "ARP Reply:" << reset << std::endl << reply.ToString() << std::endl;
-
+        attackThread = new std::thread(attack, reply);
         break;
       }
     }
 	}
 
-	ifr.ifr_flags = flags;
+  std::cout << yellow << "Waiting for attack thread to terminate..." << reset << std::endl;
+
+  attackThread->join();
+
+	ifr.ifr_flags &= ~IFF_PROMISC;  
   std::cout << "Unset interface from PROMISCUOUS mode...";
 
   if (ioctl(sockd, SIOCSIFFLAGS, &ifr) < 0)
@@ -170,6 +196,8 @@ int main(int argc, char** argv)
 void SIGINTHandler(int sig)
 {
   std::cout << yellow << "Received signal to interrupt execution. Terminating...\n\n" << reset;
+  runMutex.lock();
   run = 0;
+  runMutex.unlock();
 }
 

@@ -2,7 +2,10 @@
 #include <sstream>
 
 #include "arp.h"
+#include "colors.h"
 #include "helpers.h"
+
+using namespace Colors;
 
 Arp::Arp(BYTE* by)
 {
@@ -25,16 +28,17 @@ std::string Arp::ToString() const
 {
   std::ostringstream oss;
   
-  oss << "-------------- ARP PACKET --------------" << std::endl;
-  oss << "Hardware Type: " << std::to_string(hType) << std::endl;
-  oss << "Protocol Type: " << std::setw(4) << std::hex << static_cast<int>(pType) << std::endl;
-  oss << " HAddr Length: " << std::to_string(hLen)  << std::endl;
-  oss << " PAddr Length: " << std::to_string(pLen)  << std::endl;
-  oss << "    Operation: " << std::to_string(operation) << std::endl;
-  oss << "          SHA: " << MACToStr(senderHAddr) << std::endl;
-  oss << "          SPA: " << IPToStr(senderPAddr)  << std::endl;
-  oss << "          THA: " << MACToStr(targetHAddr) << std::endl;
-  oss << "          TPA: " << IPToStr(targetPAddr)  << std::endl;
+  oss.fill('0');
+  oss << blue << "# ARP PACKET #" << std::endl;
+  oss << blue << "    HType: " << reset << std::to_string(hType) << "\t\t\t";
+  oss << blue << "Length: " << reset << std::to_string(hLen)  << std::endl;
+  oss << blue << "    PType: " << reset << std::setw(4) << std::hex << static_cast<int>(pType) << "\t\t\t";
+  oss << blue << "Length: " << reset << std::to_string(pLen)  << std::endl;
+  oss << blue << "Operation: " << reset << std::to_string(operation) << std::endl;
+  oss << blue << "      SHA: " << reset << MACToStr(senderHAddr) << "\t";
+  oss << blue << "   THA: " << reset << MACToStr(targetHAddr) << std::endl;
+  oss << blue << "      SPA: " << reset << IPToStr(senderPAddr)  << "\t";
+  oss << blue << "   TPA: " << reset << IPToStr(targetPAddr)  << std::endl;
   
   return oss.str();
 }
