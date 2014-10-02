@@ -72,6 +72,16 @@ std::string IPToStr(const BYTE ip[])
   return oss.str();
 }
 
+BYTE LoByte(const WORD w)
+{
+  return w & 0x00FF;
+}
+
+BYTE HiByte(const WORD w)
+{
+  return (w & 0xFF00) >> 8;
+}
+
 BYTE LoNibble(const BYTE* by)
 {
   return by[0] & 0x0F;

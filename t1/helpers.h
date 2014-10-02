@@ -17,6 +17,9 @@ std::string AddrToStr(const BYTE*, BYTE);
 std::string MACToStr(const BYTE*);
 std::string IPToStr(const BYTE*);
 
+BYTE LoByte(const WORD);
+BYTE HiByte(const WORD);
+
 BYTE LoNibble(const BYTE*);
 BYTE HiNibble(const BYTE*);
 

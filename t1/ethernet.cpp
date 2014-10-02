@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -17,6 +18,16 @@ Ethernet::Ethernet(BYTE* by)
 
 Ethernet::~Ethernet()
 {
+}
+
+int Ethernet::ToBuffer(BYTE* buffer) const
+{
+  int index = 0;
+  memcpy(&buffer[index], &destination, HLEN);  index += HLEN;
+  memcpy(&buffer[index], &source, HLEN);       index += HLEN;
+  buffer[index++] = HiByte(etherType);
+  buffer[index++] = LoByte(etherType);
+  return index;
 }
 
 std::string Ethernet::ToString() const

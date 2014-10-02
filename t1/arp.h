@@ -6,9 +6,11 @@
 class Arp
 {
 public:
+  Arp(){}
 	Arp(BYTE*);
 	~Arp();
 
+  int ToBuffer(BYTE*) const;
 	std::string ToString() const;
 
 	WORD hType;

@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 
@@ -22,6 +23,24 @@ Arp::Arp(BYTE* by)
 
 Arp::~Arp()
 {
+}
+
+int Arp::ToBuffer(BYTE* buffer) const
+{
+  int index = 0;
+  buffer[index++] = HiByte(hType);
+  buffer[index++] = LoByte(hType);
+  buffer[index++] = HiByte(pType);
+  buffer[index++] = LoByte(pType);
+  buffer[index++] = hLen;
+  buffer[index++] = pLen;
+  buffer[index++] = HiByte(operation);
+  buffer[index++] = LoByte(operation);
+  memcpy(&buffer[index], &senderHAddr, HLEN);  index += HLEN;
+  memcpy(&buffer[index], &senderPAddr, PLEN);  index += PLEN;
+  memcpy(&buffer[index], &targetHAddr, HLEN);  index += HLEN;
+  memcpy(&buffer[index], &targetPAddr, PLEN);  index += PLEN;
+  return index;
 }
 
 std::string Arp::ToString() const
