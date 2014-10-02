@@ -89,6 +89,29 @@ void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
   ok();
 }
 
+void monitor(int socket, const Arp& arp)
+{
+	BYTE buff[BUFFSIZE];
+  while (run)
+  {
+    runMutex.lock();
+
+    recv(socket, (char *) &buff, sizeof(buff), 0x00);
+    Ethernet ethernet(&buff[0]);
+
+    if (ethernet.etherType == P_IPv4)
+    {
+      Ip ip(&buff[14]);
+      if (CompareIP(arp.targetPAddr, ip.targetAddr))
+      {
+        std::cout << std::endl << "ATAQUE FOI UM SUCESSO!" << std::endl;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    runMutex.unlock();
+  }
+}
+
 int main(int argc, char** argv)
 {
   if (argc != 2)
@@ -100,6 +123,7 @@ int main(int argc, char** argv)
   BYTE intMac[HLEN];
   BYTE intIp[PLEN];
   std::thread* attackThread = nullptr;
+  std::thread* monitorThread = nullptr;
 
   std::cout << "Capture SIGINT...";
 
@@ -200,6 +224,7 @@ int main(int argc, char** argv)
         std::cout << std::endl << arp.ToString() << std::endl;
 
         attackThread = new std::thread(attack, sockd, ifr.ifr_ifindex, intMac, arp);
+        monitorThread = new std::thread(monitor, sockd, arp);
         break;
       }
     }
@@ -208,6 +233,7 @@ int main(int argc, char** argv)
   if (attackThread != nullptr)
   {
     attackThread->join();
+    monitorThread->join();
   }
 
 	ifr.ifr_flags &= ~IFF_PROMISC;  
