@@ -46,7 +46,7 @@ void attack(int socket, int ifindex, BYTE* intMac, const Arp& arp)
   Ethernet ethernet;
   memcpy(ethernet.destination, reply.targetHAddr, HLEN);
   memcpy(ethernet.source, reply.senderHAddr, HLEN);
-  ethernet.etherType = 0x0806;
+  ethernet.etherType = P_ARP;
 
   int size = 0;
   BYTE buff[BUFFSIZE];
