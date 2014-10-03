@@ -218,19 +218,19 @@ int main(int argc, char** argv)
       {
         std::cout << std::endl << arp.ToString() << std::endl;
 
-  char ch = '\0';
-  while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
+        char ch = '\0';
+        while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
         {
-    std::cout << "Attack? [Y/N] ";
+          std::cout << "Attack? [Y/N] ";
           std::cin >> ch;
         }
 
-  if (ch == 'y' || ch == 'Y')
-  {
+        if (ch == 'y' || ch == 'Y')
+        {
           attackThread = new std::thread(attack, sockd, ifindex, intMac, arp);
           monitorThread = new std::thread(monitor, sockd, arp);
           break;
-  }
+        }
       }
     }
   }
