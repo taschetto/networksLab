@@ -7,19 +7,19 @@ class Arp
 {
 public:
   Arp(){}
-	Arp(BYTE*);
-	~Arp();
+  Arp(BYTE*);
+  ~Arp();
 
   int ToBuffer(BYTE*) const;
-	std::string ToString() const;
+  std::string ToString() const;
 
-	WORD hType;
-	WORD pType;
-	BYTE hLen;
-	BYTE pLen;
-	WORD operation;
-	BYTE senderHAddr[HLEN];
-	BYTE senderPAddr[PLEN];
-	BYTE targetHAddr[HLEN];
-	BYTE targetPAddr[PLEN];
+  WORD hType;
+  WORD pType;
+  BYTE hLen;
+  BYTE pLen;
+  WORD operation;
+  BYTE senderHAddr[HLEN];
+  BYTE senderPAddr[PLEN];
+  BYTE targetHAddr[HLEN];
+  BYTE targetPAddr[PLEN];
 };

