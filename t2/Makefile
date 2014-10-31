@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -std=c++11 -pthread -Wall -I.
-TARGET = ospf 
+TARGET = phantom 
 DEPS = defines.h helpers.h colors.h
 OBJ = helpers.o
 
