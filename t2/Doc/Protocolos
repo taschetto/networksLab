@@ -1,0 +1,67 @@
+1 - Ethernet
+2 - IP
+4 - UDP
+5 - OSPF
+
+
+
+
+
+########################### STRUCT IP ########################################
+
+struct ip {
+        u_int   ip_hl:4,                /* header length */
+                ip_v:4;                 /* ip version */
+        u_char  ip_tos;                 /* type of service */
+        u_short ip_len;                 /* total length */
+        u_short ip_id;                  /* identification */
+        u_short ip_off;                 /* fragment offset */
+        u_char  ip_ttl;                 /* time to live */
+        u_char  ip_p;                   /* protocol */
+        u_short ip_sum;                 /* checksum */
+        struct  in_addr ip_src,ip_dst;  /* source and dest address */
+};
+		
+Field                           Length          Example
+------------------------------	---------------	-------------------
+Version                         4 bits          4
+Header length                   4 bits          5
+Type of Service                 8 bits          0
+Total length of the whole       16 bits         45
+datagram
+Identification                  16 bits         43211
+Flags                            3 bits	        0
+Fragment Offset	                13 bits	        0
+Time to Live (a.k.a TTL)         8 bits	        64
+Layer III Protocol               8 bits	        6 [TCP]
+Checksum                        16 bits	        0x3a43
+Source IP address               32 bits         192.168.1.1
+Destination IP address          32 bits         192.168.1.2
+################################################################################
+
+
+
+
+########################### STRUCT UDP #########################################
+/*
+ * Udp protocol header.
+ * Per RFC 768, September, 1981.
+ */
+struct udphdr {
+        u_short uh_sport;               /* source port */
+        u_short uh_dport;               /* destination port */
+        u_short uh_ulen;                /* udp length */
+        u_short uh_sum;                 /* udp checksum */
+};
+		
+Field                           Length          Example
+------------------------------	---------------	-------------------
+Source Port                     16 bits         12831
+Destination Port                16 bits	        53
+UDP datagram length             16 bits         321
+UDP checksum     
+################################################################################
+
+
+
+
