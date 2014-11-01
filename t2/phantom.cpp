@@ -1,8 +1,10 @@
 #include <cstring>
 #include <iostream>
 #include <net/ethernet.h>
+#include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <arpa/inet.h>
 
 #include "colors.h"
 #include "interface.h"
@@ -34,6 +36,10 @@ int main(int argc, char* argv[])
     exit(-1);
 
   // Ready to capture. :-)
+  cout << blue << "Ready to capture from: " << reset << ifr.ifr_name << endl;
+  cout << blue << "      Interface Index: " << reset << ifr.ifr_ifindex << endl;
+  cout << blue << "        Hardware Addr: " << reset << ether_ntoa((struct ether_addr*)ifr.ifr_hwaddr.sa_data) << endl;
+  cout << blue << "        Protocol Addr: " << reset << inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr) << endl;
 
   if (resetInterface(socket, ifr) < 0)
     exit(-1);
