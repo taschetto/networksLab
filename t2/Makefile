@@ -1,8 +1,8 @@
 CC = g++
 CFLAGS = -std=c++11 -pthread -Wall -I.
 TARGET = phantom 
-DEPS = defines.h helpers.h colors.h
-OBJ = helpers.o
+DEPS = colors.h helpers.h interface.h
+OBJ = helpers.o interface.o
 
 all: $(TARGET)
 
