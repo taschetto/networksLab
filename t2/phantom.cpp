@@ -2,15 +2,15 @@
 
 #include <iostream>
 #include <thread>
-
+#include <iomanip>
 #include <net/ethernet.h>
 #include <netinet/ether.h>
 #include <linux/ip.h>
 #include <netinet/udp.h>
-#include <arpa/inet.h>
 
 #include "colors.h"
 #include "interface.h"
+#include "print.h"
 
 using namespace std;
 using namespace Colors;
@@ -19,6 +19,7 @@ void sigint_handler(int);
 void sniff(const int, const ifreq&);
 
 bool stop = false;
+static pthread_mutex_t cs_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 int main(int argc, char* argv[])
 {
@@ -56,22 +57,26 @@ int main(int argc, char* argv[])
 void sigint_handler(int)
 {
   cout << yellow << "Received SIGINT to interrupt execution." << reset << endl;
+  pthread_mutex_lock(&cs_mutex);
   stop = true;
+  pthread_mutex_unlock(&cs_mutex);
 }
 
 void sniff(const int socket, const ifreq& ifr)
 {
-  cout << blue << "Ready to capture from: " << reset << ifr.ifr_name << endl;
-  cout << blue << "      Interface Index: " << reset << ifr.ifr_ifindex << endl;
-  cout << blue << "        Hardware Addr: " << reset << ether_ntoa((struct ether_addr*)ifr.ifr_hwaddr.sa_data) << endl;
-  cout << blue << "        Protocol Addr: " << reset << inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr) << endl;
+  cout << ifreq_to_str(ifr);
 
   u_char buff[ETHER_MAX_LEN];
 
   for (;;)
   {
+    pthread_mutex_lock(&cs_mutex);
     if (stop)
+    {
+      pthread_mutex_unlock(&cs_mutex);
       break;
+    }
+    pthread_mutex_unlock(&cs_mutex);
 
     if (recv(socket, (char*)&buff, sizeof(buff), 0x00) < ETHER_MIN_LEN)
       continue;
@@ -79,30 +84,14 @@ void sniff(const int socket, const ifreq& ifr)
     struct ether_header ether;
     memcpy(&ether, &buff, sizeof(ether));
       
-    cout << endl;
-    cout << blue << "Ethernet Packet" << reset << endl;
-    cout << blue << "Destination: " << reset << ether_ntoa((struct ether_addr*)ether.ether_dhost) << endl;
-    cout << blue << "        Src: " << reset << ether_ntoa((struct ether_addr*)ether.ether_shost) << endl;
-    cout << blue << "       Type: " << reset << ntohs(ether.ether_type) << endl;
-
     if (ntohs(ether.ether_type) == ETHERTYPE_IP)
     {
-      struct iphdr ip;
-      memcpy(&ip, &buff[ETHER_HDR_LEN], sizeof(iphdr));
+      cout << ether_to_str(ether);
 
-      cout << endl;
-      cout << blue << "IP Packet" << reset << endl;
-      cout << blue << "        IHL: " << reset << ip.ihl << endl;
-      cout << blue << "    Version: " << reset << ip.version << endl;
-      cout << blue << "        TOS: " << reset << ip.tos << endl;
-      cout << blue << "        LEN: " << reset << ip.tot_len << endl;
-      cout << blue << "         ID: " << reset << ip.id << endl;
-      cout << blue << "   Frag Off: " << reset << ip.frag_off << endl;
-      cout << blue << "        TTL: " << reset << ip.ttl << endl;
-      cout << blue << "   Protocol: " << reset << ntohs(ip.protocol) << endl;
-      cout << blue << "      Check: " << reset << ip.check << endl;
-      cout << blue << "     Source: " << reset << inet_ntoa(((struct sockaddr_in *)&ip.saddr)->sin_addr) << endl;
-      cout << blue << "Destination: " << reset << inet_ntoa(((struct sockaddr_in *)&ip.daddr)->sin_addr) << endl;
+      struct iphdr ip;
+      memcpy(&ip, &buff[ETHER_HDR_LEN], 1);
+      memcpy(&ip, &buff[ETHER_HDR_LEN], ip.ihl * 4);
+      cout << ip_to_str(ip);
 
       if (ntohs(ip.protocol) == IPPROTO_UDP)
       {
