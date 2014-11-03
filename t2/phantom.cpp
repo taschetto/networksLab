@@ -86,15 +86,15 @@ void sniff(const int socket, const ifreq& ifr)
       
     if (ntohs(ether.ether_type) == ETHERTYPE_IP)
     {
-      cout << ether_to_str(ether);
 
       struct iphdr ip;
       memcpy(&ip, &buff[ETHER_HDR_LEN], 1);
       memcpy(&ip, &buff[ETHER_HDR_LEN], ip.ihl * 4);
-      cout << ip_to_str(ip);
 
       if (ntohs(ip.protocol) == IPPROTO_UDP)
       {
+        cout << ether_to_str(ether);
+        cout << ip_to_str(ip);
         cout << endl << red << "Received UDP packet!" << reset << endl;
       }
     }
