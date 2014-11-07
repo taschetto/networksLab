@@ -66,3 +66,17 @@ string ip_to_str(const iphdr& ip)
 
   return oss.str();
 }
+
+string udp_to_str(const udphdr& udp)
+{
+  ostringstream oss;
+
+  oss.fill('0');
+  oss << endl;
+  oss << blue << "UDP Packet" << reset << endl;
+  oss << blue << "     Source Port: " << reset << ntohs(udp.source) << endl;
+  oss << blue << "Destination Port: " << reset << ntohs(udp.dest) << endl;
+  oss << blue << "          Length: " << reset << ntohs(udp.len) << endl;
+  oss << blue << "        CheckSum: " << reset << std::setw(4) << std::hex << ntohs(udp.check) << endl;
+  return oss.str();
+}

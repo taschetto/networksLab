@@ -11,3 +11,4 @@
 std::string ifreq_to_str(const ifreq&);
 std::string ether_to_str(const ether_header&);
 std::string ip_to_str(const iphdr&);
+std::string udp_to_str(const udphdr&);
