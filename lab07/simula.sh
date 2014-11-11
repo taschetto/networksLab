@@ -1,57 +1,70 @@
 #!/bin/bash
 
-echo "Simulação TCP"
+SERVER=10.32.143.236
+TCP=5001
+UDP=5002
+DURATION=30
+FILE=report.md
+TITLE=""
 
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 1K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 4K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 8K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 32K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 128K -t 30
+SimulaTcp()
+{
+  echo $TITLE " ~ " $1
+  echo "##$TITLE ~ $1" >> "$FILE"
+  echo "\`\`\`" >> "$FILE"
+  iperf -c $SERVER -i 1 -p $TCP -w $1 -t $DURATION >> "$FILE"
+  echo "\`\`\`" >> "$FILE"
+}
 
-echo "Simulação UDP"
+SimulaUdp()
+{
+  echo $TITLE " ~ " $1
+  echo "##$TITLE ~ $1" >> "$FILE"
+  echo "\`\`\`" >> "$FILE"
+  iperf -c $SERVER -u -t 3 -p $UDP -b $1 -t $DURATION >> "$FILE"
+  echo "\`\`\`" >> "$FILE"
+}
 
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50k -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 1M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 5M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 10M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50M -t 30
+GrupoSimulaTcp()
+{
+  SimulaTcp "1K"
+  SimulaTcp "4K"
+  SimulaTcp "8K"
+  SimulaTcp "32K"
+  SimulaTcp "128K"
+}
+
+GrupoSimulaUdp()
+{
+  SimulaUdp "50k" 
+  SimulaUdp "1M"
+  SimulaUdp "5M"
+  SimulaUdp "10M"
+  SimulaUdp "50M"
+}
+
+TITLE="Simulação TCP"
+GrupoSimulaTcp
+
+TITLE="Simulação UDP"
+GrupoSimulaUdp
 
 sudo tc qdisc del dev eth3 root
 sudo tc qdisc add dev eth3 root netem delay 100ms 10ms 25%
 
-echo "Simulação TCP com latência variável"
+TITLE="Simulação TCP com latência variável"
+GrupoSimulaTcp
 
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 1K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 4K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 8K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 32K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 128K -t 30
-
-echo "Simulação UDP com latência variável"
-
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50k -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 1M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 5M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 10M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50M -t 30
+TITLE="Simulação UDP com latência variável"
+GrupoSimulaUdp
 
 sudo tc qdisc del dev eth3 root
-sudo tc qdisc add dev eth0 root netem loss 3% 25%
+sudo tc qdisc add dev eth3 root netem loss 10% 25%
 
-echo "Simulação TCP com perda de pacotes"
+TITLE="Simulação TCP com perda de pacotes"
+GrupoSimulaTcp
 
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 1K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 4K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 8K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 32K -t 30
-iperf -c 10.32.143.237 -i 1 -p 5001 -w 128K -t 30
-
-echo "Simulação UDP com perda de pacotes"
-
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50k -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 1M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 5M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 10M -t 30
-iperf -c 10.32.143.237 -u -t 3 -p 5002 -b 50M -t 30
+TITLE="Simulação UDP com perda de pacotes"
+GrupoSimulaUdp
 
 sudo tc qdisc del dev eth3 root
