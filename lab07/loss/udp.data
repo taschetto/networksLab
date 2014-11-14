@@ -1,0 +1,6 @@
+Taxa		Throughput	Jitter		Loss
+50.0 Kbits/sec	49.6 Kbits/sec	0.009 ms	1/129 (0.78%)
+1000 Kbits/sec	487 Kbits/sec	0.015 ms	54/2553 (2.1%)
+5.00 Mbits/sec	1.63 Mbits/sec	0.005 ms	236/12756 (1.9%)
+10.0 Mbits/sec	2.45 Mbits/sec	0.006 ms	428/25511 (1.7%)
+50.0 Mbits/sec	9.80 Mbits/sec	0.007 ms	2206/127660 (1.7%)

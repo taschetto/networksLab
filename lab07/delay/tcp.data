@@ -1,0 +1,6 @@
+Window Size (KByte)	Total (MBytes)	Throughput Mbits/sec
+1.00	1.00	0.22
+4.00	1.00	0.22
+8.00	1.75	0.43
+32.0	6.00	1.63
+128	20.9	5.79
