@@ -74,6 +74,19 @@ string ospf_to_str(const ospfhdr& ospf)
 
   oss.fill('0');
   oss << endl;
-  oss << blue << "OSPF Packet"        << reset << endl;
+  oss << blue << "OSPF Packet"  << reset << endl;
+  oss << blue << "    Version: " << reset << (int)ospf.ospf_version  << endl;
+  oss << blue << "       Type: " << reset << (int)ospf.ospf_type     << endl;
+  oss << blue << "     Length: " << reset << ntohs(ospf.ospf_len)    << endl;
+
+  char straddr[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &ospf.ospf_routerid, straddr, sizeof straddr);
+  oss << blue << "   RouterId: " << reset << straddr << endl;
+
+  inet_ntop(AF_INET, &ospf.ospf_areaid, straddr, sizeof straddr);
+  oss << blue << "     AreaId: " << reset << straddr << endl;
+  oss << blue << "   CheckSum: " << reset << "0x" << std::setw(4) << std::hex << ntohs(ospf.ospf_chksum) << endl;
+  oss << blue << "   AuthType: " << reset << (int)ospf.ospf_authtype << endl;
+
   return oss.str();
 }

@@ -1,3 +1,5 @@
 https://sites.google.com/site/amitsciscozone/home/important-tips/ospf/ospf-packet-types
 
+http://ciscoiseasy.blogspot.com.br/2011/02/lesson-39-ospf-fundamentals-part2-hello.html
+
 
