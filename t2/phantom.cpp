@@ -7,6 +7,10 @@
 #include <netinet/ether.h>
 #include <linux/ip.h>
 #include <netinet/udp.h>
+#include <netinet/in.h>
+
+#include "ipproto.h"
+#include "ospf.h"
 
 #include "colors.h"
 #include "interface.h"
@@ -92,14 +96,14 @@ void sniff(const int socket, const ifreq& ifr)
       const int IP_HDR_LEN = ip.ihl * 4;
       memcpy(&ip, &buff[ETHER_HDR_LEN], IP_HDR_LEN);
 
-      if (ip.protocol == IPPROTO_UDP)
+      if (ip.protocol == IPPROTO_OSPF)
       {
-        struct udphdr udp;
-        memcpy(&udp, &buff[ETHER_HDR_LEN + IP_HDR_LEN], sizeof(udphdr));
+        struct ospfhdr ospf;
+        memcpy(&ospf, &buff[ETHER_HDR_LEN + IP_HDR_LEN], sizeof(ospfhdr));
 
         cout << ether_to_str(ether);
         cout << ip_to_str(ip);
-        cout << udp_to_str(udp); 
+        cout << ospf_to_str(ospf); 
       }
     }
   }

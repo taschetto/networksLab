@@ -7,8 +7,9 @@
 #include <linux/ip.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include "ospf.h"
 
 std::string ifreq_to_str(const ifreq&);
 std::string ether_to_str(const ether_header&);
 std::string ip_to_str(const iphdr&);
-std::string udp_to_str(const udphdr&);
+std::string ospf_to_str(const ospfhdr&);

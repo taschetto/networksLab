@@ -20,6 +20,9 @@
  *
  * OSPF support contributed by Jeffrey Honig (jch@mitchell.cit.cornell.edu)
  */
+
+#pragma once
+
 #define	OSPF_TYPE_UMD           0	/* UMd's special monitoring packets */
 #define	OSPF_TYPE_HELLO         1	/* Hello */
 #define	OSPF_TYPE_DD            2	/* Database Description */
@@ -323,3 +326,4 @@ struct ospfhdr {
 #define	ospf_lsr	ospf_un.un_lsr
 #define	ospf_lsu	ospf_un.un_lsu
 #define	ospf_lsa	ospf_un.un_lsa
+
