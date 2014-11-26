@@ -121,32 +121,32 @@ void sniff(const int socket, const ifreq& ifr)
         struct ospfhdr ospf;
         memcpy(&ospf, &buff[ETHER_HDR_LEN + IP_HDR_LEN], sizeof(ospfhdr));
 
-        cout << ether_to_str(ether);
-        cout << ip_to_str(ip);
-        cout << ospf_to_str(ospf);
+        //cout << ether_to_str(ether);
+        //cout << ip_to_str(ip);
+        //cout << ospf_to_str(ospf);
 
         switch (ospf.ospf_type)
         {
     			case 1:
             //cout << "Hello" << endl;
-            cout << ospf_hello_to_str(ospf);
+            //cout << ospf_hello_to_str(ospf);
             answer_to_ospf_hello(socket, ether, ip, ospf);
       			break;
     			case 2:
       			//cout << "Database Description" << endl;
-      			cout << ospf_db_to_str(ospf);
+      			//cout << ospf_db_to_str(ospf);
       			break;
     			case 3:
       			//cout << "Link State Request" << endl;
-      			cout << ospf_lsr_to_str(ospf);
+      			//cout << ospf_lsr_to_str(ospf);
       			break;
     			case 4:
       			//cout << "Link State Update" << endl;
-      			cout << ospf_lsu_to_str(ospf);
+      			//cout << ospf_lsu_to_str(ospf);
       			break;
     			case 5:
       			//cout << "Link State Acknowledgment" << endl;
-      			cout << ospf_lsa_to_str(ospf);
+      			//cout << ospf_lsa_to_str(ospf);
       			break;
 		    }
 
@@ -168,22 +168,20 @@ void sniff(const int socket, const ifreq& ifr)
   }
 }
 
-void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
+void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
 {
-  u_char buff[ETHER_MAX_LEN];
+  char buff[ETHER_MAX_LEN];
 
   // Altera os headers pro pacote de resposta
-
   memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);
   memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
-
   ip.daddr = ip.saddr;
   ip.saddr = ip.saddr;
 
+  cout << ether_to_str(ethernet);
   cout << ip_to_str(ip);
 
   // Monta o pacote com os dados
-
   memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
   const int IP_HDR_LEN = ip.ihl * 4;
   memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
@@ -193,13 +191,18 @@ void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr
   destAddr.sll_family = htons(PF_PACKET);
   destAddr.sll_protocol = htons(ETH_P_ALL);
   destAddr.sll_halen = ETH_ALEN;
-  destAddr.sll_ifindex = ifr.ifr_ifindex;
+  destAddr.sll_ifindex = 2;
 
-  memcpy(&destAddr.sll_addr, ethernet.ether_shost, ETH_ALEN);
-  std::cout << green << "Answering..." << std::endl;
+  memcpy(&destAddr.sll_addr, &ethernet.ether_shost, ETH_ALEN);
+  std::cout << "Answering...";
 
-  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr);
-  if (sendto(socket, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+  char bla[12] = {0xff, 0xf6, 0x00, 0x03, 0x00, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01};
+
+  for (int i = 0; i < 12; i++)
+    buff[ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr) + i] = bla[i];
+
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr) + 12;
+  if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
   {
     error();
     return;
