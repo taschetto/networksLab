@@ -9,6 +9,7 @@
 #include <netinet/udp.h>
 #include <netinet/in.h>
 #include <netpacket/packet.h>
+#include "in_cksum.h"
 
 #include "ipproto.h"
 #include "ospf.h"
@@ -60,23 +61,6 @@ int main(int argc, char* argv[])
 
   return 0;
 }
-
-       // Tipo Descrição
-       // ________________________________
-       // 1      Hello
-       // 2      Database Description
-       // 3      Link State Request
-       // 4      Link State Update
-       // 5      Link State Acknowledgment
-
-void send_ospf();
-void send_hello();
-void send_db();
-void send_lsr();
-void send_lsu();
-void send_lsa();
-
-
 
 void sigint_handler(int)
 {
@@ -177,15 +161,16 @@ void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr&
   memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
   ip.daddr = ip.saddr;
   ip.saddr = ip.saddr;
+  ip.check = 0;
+  ip.check = in_cksum((unsigned short *)&ip, sizeof(struct iphdr));
 
-  cout << ether_to_str(ethernet);
-  cout << ip_to_str(ip);
+  //ospf.ospf_un.un_hello.hello_options &= 0xef;
 
   // Monta o pacote com os dados
   memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
   const int IP_HDR_LEN = ip.ihl * 4;
   memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
-  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(ospfhdr));
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(struct ospfhdr));
 
   struct sockaddr_ll destAddr;
   destAddr.sll_family = htons(PF_PACKET);
@@ -196,12 +181,7 @@ void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr&
   memcpy(&destAddr.sll_addr, &ethernet.ether_shost, ETH_ALEN);
   std::cout << "Answering...";
 
-  char bla[12] = {0xff, 0xf6, 0x00, 0x03, 0x00, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01};
-
-  for (int i = 0; i < 12; i++)
-    buff[ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr) + i] = bla[i];
-
-  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr) + 12;
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(struct ospfhdr);
   if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
   {
     error();
@@ -237,7 +217,7 @@ void answer_to_ospf_db(int socket, ether_header& ethernet, iphdr& ip, ospfhdr& o
   destAddr.sll_family = htons(PF_PACKET);
   destAddr.sll_protocol = htons(ETH_P_ALL);
   destAddr.sll_halen = ETH_ALEN;
-  destAddr.sll_ifindex = ifr.ifr_ifindex;
+  destAddr.sll_ifindex = 2;
 
   memcpy(&destAddr.sll_addr, ethernet.ether_shost, ETH_ALEN);
   std::cout << green << "Answering..." << std::endl;
