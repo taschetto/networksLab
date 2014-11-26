@@ -8,11 +8,13 @@
 #include <linux/ip.h>
 #include <netinet/udp.h>
 #include <netinet/in.h>
+#include <netpacket/packet.h>
 
 #include "ipproto.h"
 #include "ospf.h"
 
 #include "colors.h"
+#include "helpers.h"
 #include "interface.h"
 #include "print.h"
 
@@ -21,7 +23,9 @@ using namespace Colors;
 
 void sigint_handler(int);
 void sniff(const int, const ifreq&);
+void answer_to_ospf_hello(int, ether_header&, iphdr&, ospfhdr);
 
+struct ifreq ifr;
 bool stop = false;
 static pthread_mutex_t cs_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
@@ -40,7 +44,6 @@ int main(int argc, char* argv[])
   if (initSocket(socket) < 0)
     exit(-1);
 
-  struct ifreq ifr;
   strcpy(ifr.ifr_name, argv[1]);
 
   if (initInterface(socket, ifr) < 0)
@@ -122,29 +125,30 @@ void sniff(const int socket, const ifreq& ifr)
         cout << ip_to_str(ip);
         cout << ospf_to_str(ospf);
 
-        switch((int)ospf.ospf_type){
-			case 1:
+        switch (ospf.ospf_type)
+        {
+    			case 1:
             //cout << "Hello" << endl;
             cout << ospf_hello_to_str(ospf);
-			break;
-			case 2:
-			//cout << "Database Description" << endl;
-			cout << ospf_db_to_str(ospf);
-			break;
-			case 3:
-			//cout << "Link State Request" << endl;
-			cout << ospf_lsr_to_str(ospf);
-			break;
-			case 4:
-			//cout << "Link State Update" << endl;
-			cout << ospf_lsu_to_str(ospf);
-			break;
-			case 5:
-			//cout << "Link State Acknowledgment" << endl;
-			cout << ospf_lsa_to_str(ospf);
-			break;
-
-		}
+            answer_to_ospf_hello(socket, ether, ip, ospf);
+      			break;
+    			case 2:
+      			//cout << "Database Description" << endl;
+      			cout << ospf_db_to_str(ospf);
+      			break;
+    			case 3:
+      			//cout << "Link State Request" << endl;
+      			cout << ospf_lsr_to_str(ospf);
+      			break;
+    			case 4:
+      			//cout << "Link State Update" << endl;
+      			cout << ospf_lsu_to_str(ospf);
+      			break;
+    			case 5:
+      			//cout << "Link State Acknowledgment" << endl;
+      			cout << ospf_lsa_to_str(ospf);
+      			break;
+		    }
 
        // Tipo Descrição
        // ________________________________
@@ -159,9 +163,47 @@ void sniff(const int socket, const ifreq& ifr)
        // Requisição de estado de link (Link State Request packet)
        // Atualização de estado de link (Link State Update packet)
        // Recebimento de informações de link (Link State Acknowledgment packet)
-
-
       }
     }
   }
+}
+
+void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr ospf)
+{
+  u_char buff[ETHER_MAX_LEN];
+
+  // Altera os headers pro pacote de resposta
+
+  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);
+  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
+
+  ip.daddr = ip.saddr;
+  ip.saddr = ip.saddr;
+
+  cout << ip_to_str(ip);
+
+  // Monta o pacote com os dados
+
+  memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
+  const int IP_HDR_LEN = ip.ihl * 4;
+  memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(ospfhdr));
+
+  struct sockaddr_ll destAddr;
+  destAddr.sll_family = htons(PF_PACKET);
+  destAddr.sll_protocol = htons(ETH_P_ALL);
+  destAddr.sll_halen = ETH_ALEN;
+  destAddr.sll_ifindex = ifr.ifr_ifindex;
+
+  memcpy(&destAddr.sll_addr, ethernet.ether_shost, ETH_ALEN);
+  std::cout << green << "Answering..." << std::endl;
+
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr);
+  if (sendto(socket, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+  {
+    error();
+    return;
+  }
+
+  ok();
 }
