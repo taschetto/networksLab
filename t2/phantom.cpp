@@ -23,7 +23,7 @@ using namespace Colors;
 
 void sigint_handler(int);
 void sniff(const int, const ifreq&);
-void answer_to_ospf_hello(int, ether_header&, iphdr&, ospfhdr);
+void answer_to_ospf_hello(int, ether_header&, iphdr&, ospfhdr&);
 
 struct ifreq ifr;
 bool stop = false;
@@ -168,7 +168,7 @@ void sniff(const int socket, const ifreq& ifr)
   }
 }
 
-void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr ospf)
+void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
 {
   u_char buff[ETHER_MAX_LEN];
 
