@@ -207,3 +207,44 @@ void answer_to_ospf_hello(int socket, ether_header& ethernet, iphdr& ip, ospfhdr
 
   ok();
 }
+
+
+void answer_to_ospf_db(int socket, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
+{
+  u_char buff[ETHER_MAX_LEN];
+
+  // Altera os headers pro pacote de resposta
+
+  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);
+  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
+
+  ip.daddr = ip.saddr;
+  ip.saddr = ip.saddr;
+
+  cout << ip_to_str(ip);
+
+  // Monta o pacote com os dados
+
+  memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
+  const int IP_HDR_LEN = ip.ihl * 4;
+  memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(ospfhdr));
+
+  struct sockaddr_ll destAddr;
+  destAddr.sll_family = htons(PF_PACKET);
+  destAddr.sll_protocol = htons(ETH_P_ALL);
+  destAddr.sll_halen = ETH_ALEN;
+  destAddr.sll_ifindex = ifr.ifr_ifindex;
+
+  memcpy(&destAddr.sll_addr, ethernet.ether_shost, ETH_ALEN);
+  std::cout << green << "Answering..." << std::endl;
+
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr);
+  if (sendto(socket, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+  {
+    error();
+    return;
+  }
+
+  ok();
+}
