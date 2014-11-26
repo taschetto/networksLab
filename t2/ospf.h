@@ -326,4 +326,3 @@ struct ospfhdr {
 #define	ospf_lsr	ospf_un.un_lsr
 #define	ospf_lsu	ospf_un.un_lsu
 #define	ospf_lsa	ospf_un.un_lsa
-

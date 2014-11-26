@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
   if (argc != 2)
   {
     std::cerr << "Usage: phantom <interface>" << endl;
-    exit(-1); 
+    exit(-1);
   }
 
   if (initSignal(sigint_handler) < 0)
@@ -57,6 +57,23 @@ int main(int argc, char* argv[])
 
   return 0;
 }
+
+       // Tipo Descrição
+       // ________________________________
+       // 1      Hello
+       // 2      Database Description
+       // 3      Link State Request
+       // 4      Link State Update
+       // 5      Link State Acknowledgment
+
+void send_ospf();
+void send_hello();
+void send_db();
+void send_lsr();
+void send_lsu();
+void send_lsa();
+
+
 
 void sigint_handler(int)
 {
@@ -87,7 +104,7 @@ void sniff(const int socket, const ifreq& ifr)
 
     struct ether_header ether;
     memcpy(&ether, &buff, sizeof(ether));
-      
+
     if (ntohs(ether.ether_type) == ETHERTYPE_IP)
     {
 
@@ -103,7 +120,47 @@ void sniff(const int socket, const ifreq& ifr)
 
         cout << ether_to_str(ether);
         cout << ip_to_str(ip);
-        cout << ospf_to_str(ospf); 
+        cout << ospf_to_str(ospf);
+
+        switch((int)ospf.ospf_type){
+			case 1:
+            //cout << "Hello" << endl;
+            cout << ospf_hello_to_str(ospf);
+			break;
+			case 2:
+			//cout << "Database Description" << endl;
+			cout << ospf_db_to_str(ospf);
+			break;
+			case 3:
+			//cout << "Link State Request" << endl;
+			cout << ospf_lsr_to_str(ospf);
+			break;
+			case 4:
+			//cout << "Link State Update" << endl;
+			cout << ospf_lsu_to_str(ospf);
+			break;
+			case 5:
+			//cout << "Link State Acknowledgment" << endl;
+			cout << ospf_lsa_to_str(ospf);
+			break;
+
+		}
+
+       // Tipo Descrição
+       // ________________________________
+       // 1      Hello
+       // 2      Database Description
+       // 3      Link State Request
+       // 4      Link State Update
+       // 5      Link State Acknowledgment
+
+       // Pacote de aviso. (Hello packet)
+       // Pacote de informações do Banco de Dados (Database Description packet)
+       // Requisição de estado de link (Link State Request packet)
+       // Atualização de estado de link (Link State Update packet)
+       // Recebimento de informações de link (Link State Acknowledgment packet)
+
+
       }
     }
   }
