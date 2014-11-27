@@ -24,11 +24,14 @@ using namespace Colors;
 
 void sigint_handler(int);
 void sniff(const int, const ifreq&);
-void answer_to_ospf_hello(int, ether_header&, iphdr&, ospfhdr&);
+void answer_hello(int, const ether_header&, const iphdr&, const ospfhdr&);
+void answer_db(int, const ether_header&, const iphdr&, const ospfhdr&);
 
 struct ifreq ifr;
 bool stop = false;
 static pthread_mutex_t cs_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+
+std::thread* hello;
 
 int main(int argc, char* argv[])
 {
@@ -114,11 +117,13 @@ void sniff(const int socket, const ifreq& ifr)
     			case 1:
             //cout << "Hello" << endl;
             //cout << ospf_hello_to_str(ospf);
-            answer_to_ospf_hello(socket, ether, ip, ospf);
+            if (hello == nullptr)
+              hello = new std::thread(answer_hello, socket, ether, ip, ospf);
       			break;
     			case 2:
-      			//cout << "Database Description" << endl;
+      			cout << "Database Description" << endl;
       			//cout << ospf_db_to_str(ospf);
+            answer_db(socket, ether, ip, ospf);            
       			break;
     			case 3:
       			//cout << "Link State Request" << endl;
@@ -152,27 +157,70 @@ void sniff(const int socket, const ifreq& ifr)
   }
 }
 
-void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
+void answer_hello(int sockt, const ether_header& ethernet, const iphdr& ip, const ospfhdr& ospf)
 {
-  const int IP_HDR_LEN = ip.ihl * 4;
-  const int OSPF_HDR_LEN = ntohs(ospf.ospf_len);
   char buff[ETHER_MAX_LEN] = { 0 };
+  
+  // Monta Ethernet
+  struct ether_header ether_rep;
+  memcpy(&ether_rep.ether_dhost, ethernet.ether_shost, ETH_ALEN);
+  memcpy(&ether_rep.ether_shost, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
+  ether_rep.ether_type = ethernet.ether_type;
 
-  // Altera os headers pro pacote de resposta
-  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);   // destino é o sender
-  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6); // sender é o meu MAC
-  ip.daddr = ip.saddr; // destino é o sender
-  ip.saddr = ((struct sockaddr_in*)&ifr.ifr_addr )->sin_addr.s_addr;
+  // Monta IP
+  struct iphdr ip_rep;
+  ip_rep.ihl = ip.ihl;
+  ip_rep.version = ip.version;
+  ip_rep.tos = ip.tos;
+  ip_rep.tot_len = ip.tot_len;
+  ip_rep.id = ip.id;
+  ip_rep.frag_off = ip.frag_off;
+  ip_rep.ttl = ip.ttl;
+  ip_rep.protocol = ip.protocol;
+  ip_rep.daddr = ip.saddr; // destino é o sender
+  ip_rep.saddr = ((struct sockaddr_in*)&ifr.ifr_addr )->sin_addr.s_addr; // sender é o IP da interface
 
-  ip.check = 0;
-  ip.check = in_cksum((unsigned short *)&ip, sizeof(struct iphdr));
+  const int IP_HDR_LEN = ip_rep.ihl * 4;
+
+  // Monta OSPF
+  struct ospfhdr ospf_rep;
+  ospf_rep.ospf_version  = ospf.ospf_version;
+  ospf_rep.ospf_type     = 0x01; // Hello
+  memcpy(&ospf_rep.ospf_routerid, &ifr.ifr_addr.sa_data[0], 4);
+  memcpy(&ospf_rep.ospf_areaid, &ospf.ospf_areaid, 4);
+  ospf_rep.ospf_chksum = 0;
+  ospf_rep.ospf_authtype = 0;
+  memset(&ospf_rep.ospf_authdata, 0x00, 8);
+
+  // Monta Hello
+  struct in_addr link[2] = { 0x0F0E0D0C , 0x0C0D0E0F };
+
+  memcpy(&ospf_rep.ospf_hello.hello_mask, &ospf.ospf_hello.hello_mask, 4);
+  ospf_rep.ospf_hello.hello_helloint = ospf.ospf_hello.hello_helloint;
+  ospf_rep.ospf_hello.hello_options = 0x00;
+  ospf_rep.ospf_hello.hello_priority = 0x01;
+  ospf_rep.ospf_hello.hello_deadint = ospf.ospf_hello.hello_deadint;
+  memset(&ospf_rep.ospf_hello.hello_dr, 0, 4);
+  memset(&ospf_rep.ospf_hello.hello_bdr, 0, 4);
+  memcpy(&ospf_rep.ospf_hello.hello_neighbor, &link[0], 4); 
+  memcpy(&ospf_rep.ospf_hello.hello_neighbor, &link[1], 4); 
+
+  // Atualiz Length e Checksum do OSPF
+  ospf_rep.ospf_len = htons(sizeof(struct ospfhdr));
+  ospf_rep.ospf_chksum = 0;
+  ospf_rep.ospf_chksum = in_cksum((unsigned short *)&ospf_rep, sizeof(struct ospfhdr));
+  const int OSPF_HDR_LEN = ntohs(ospf_rep.ospf_len);
+
+  // Atualiza Length e Checksum do IP  
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + OSPF_HDR_LEN;
+  ip_rep.tot_len = size - ETHER_HDR_LEN; // Tudo que está do IP pra baixo
+  ip_rep.check = 0;
+  ip_rep.check = in_cksum((unsigned short *)&ip_rep, sizeof(struct iphdr));
 
   // Monta o pacote com os dados
-  memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
-  memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
-  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, OSPF_HDR_LEN);
-
-  int size = ETHER_HDR_LEN + IP_HDR_LEN + OSPF_HDR_LEN;
+  memcpy(&buff[0], &ether_rep, ETHER_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN], &ip_rep, IP_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf_rep, OSPF_HDR_LEN);
 
   struct sockaddr_ll destAddr;
   destAddr.sll_family = htons(PF_PACKET);
@@ -181,13 +229,113 @@ void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr&
   destAddr.sll_ifindex = 2;
 
   memcpy(&destAddr.sll_addr, &ethernet.ether_shost, ETH_ALEN);
-  std::cout << "Sending OSPF HELLO...";
 
-  if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+  for (;;)
   {
-    error();
-    return;
-  }
+    pthread_mutex_lock(&cs_mutex);
+    if (stop)
+    {
+      pthread_mutex_unlock(&cs_mutex);
+      break;
+    }
+    pthread_mutex_unlock(&cs_mutex);
 
-  ok();
+    std::cout << "Sending OSPF HELLO every " << ntohs(ospf_rep.ospf_hello.hello_helloint) << " seconds...";
+
+    if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+      error();
+    else
+      ok();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(ospf_rep.ospf_hello.hello_helloint * 1000));
+  }
+}
+
+void answer_db(int sockt, const ether_header& ethernet, const iphdr& ip, const ospfhdr& ospf)
+{
+  char buff[ETHER_MAX_LEN] = { 0 };
+
+  // Monta Ethernet
+  struct ether_header ether_rep;
+  memcpy(&ether_rep.ether_dhost, ethernet.ether_shost, ETH_ALEN);
+  memcpy(&ether_rep.ether_shost, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
+  ether_rep.ether_type = ethernet.ether_type;
+
+  // Monta IP
+  struct iphdr ip_rep;
+  ip_rep.ihl = ip.ihl;
+  ip_rep.version = ip.version;
+  ip_rep.tos = ip.tos;
+  ip_rep.tot_len = ip.tot_len;
+  ip_rep.id = ip.id;
+  ip_rep.frag_off = ip.frag_off;
+  ip_rep.ttl = ip.ttl;
+  ip_rep.protocol = ip.protocol;
+  ip_rep.daddr = ip.saddr; // destino é o sender
+  ip_rep.saddr = ((struct sockaddr_in*)&ifr.ifr_addr )->sin_addr.s_addr; // sender é o IP da interface
+
+  const int IP_HDR_LEN = ip_rep.ihl * 4;
+
+  // Monta OSPF
+  struct ospfhdr ospf_rep;
+  ospf_rep.ospf_version  = ospf.ospf_version;
+  ospf_rep.ospf_type     = 0x01; // Hello
+  memcpy(&ospf_rep.ospf_routerid, &ifr.ifr_addr.sa_data[0], 4);
+  memcpy(&ospf_rep.ospf_areaid, &ospf.ospf_areaid, 4);
+  ospf_rep.ospf_chksum = 0;
+  ospf_rep.ospf_authtype = 0;
+  memset(&ospf_rep.ospf_authdata, 0x00, 8);
+
+  // Monta DB Description
+  
+  /*ospf.ospf_db.db_ifmtu = 0x0000;
+  ospf.ospf_db.db_options = 0x08;
+  ospf.ospf_db.db_flags = 0x08;
+  ospf.ospf_db.db_seq = 0x01;
+*/
+  // O que botar no LSA HEADER? :/
+
+  // Atualiza Length e Checksum do OSPF
+  ospf_rep.ospf_len = htons(sizeof(struct ospfhdr));
+  ospf_rep.ospf_chksum = 0;
+  ospf_rep.ospf_chksum = in_cksum((unsigned short *)&ospf_rep, sizeof(struct ospfhdr));
+  const int OSPF_HDR_LEN = ntohs(ospf_rep.ospf_len);
+
+  // Atualiza Length e Checksum do IP
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + OSPF_HDR_LEN;
+  ip_rep.tot_len = size - ETHER_HDR_LEN; // tudo que está do IP pra baixo
+  ip_rep.check = 0;
+  ip_rep.check = in_cksum((unsigned short *)&ip_rep, sizeof(struct iphdr));
+
+  // Monta o pacote com os dados
+  memcpy(&buff[0], &ether_rep, ETHER_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN], &ip_rep, IP_HDR_LEN);
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf_rep, OSPF_HDR_LEN);
+
+  struct sockaddr_ll destAddr;
+  destAddr.sll_family = htons(PF_PACKET);
+  destAddr.sll_protocol = htons(ETH_P_ALL);
+  destAddr.sll_halen = ETH_ALEN;
+  destAddr.sll_ifindex = 2;
+  memcpy(&destAddr.sll_addr, &ethernet.ether_shost, ETH_ALEN);
+
+  for (;;)
+  {
+    pthread_mutex_lock(&cs_mutex);
+    if (stop)
+    {
+      pthread_mutex_unlock(&cs_mutex);
+      break;
+    }
+    pthread_mutex_unlock(&cs_mutex);
+
+    std::cout << "Sending OSPF HELLO every " << ntohs(ospf_rep.ospf_hello.hello_helloint) << " seconds...";
+
+    if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
+      error();
+    else
+      ok();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(ospf_rep.ospf_hello.hello_helloint * 1000));
+  }
 }
