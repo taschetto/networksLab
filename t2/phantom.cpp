@@ -154,23 +154,25 @@ void sniff(const int socket, const ifreq& ifr)
 
 void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
 {
-  char buff[ETHER_MAX_LEN];
+  const int IP_HDR_LEN = ip.ihl * 4;
+  const int OSPF_HDR_LEN = ntohs(ospf.ospf_len);
+  char buff[ETHER_MAX_LEN] = { 0 };
 
   // Altera os headers pro pacote de resposta
-  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);
-  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
-  ip.daddr = ip.saddr;
-  ip.saddr = ip.saddr;
+  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);   // destino é o sender
+  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6); // sender é o meu MAC
+  ip.daddr = ip.saddr; // destino é o sender
+  ip.saddr = ((struct sockaddr_in*)&ifr.ifr_addr )->sin_addr.s_addr;
+
   ip.check = 0;
   ip.check = in_cksum((unsigned short *)&ip, sizeof(struct iphdr));
 
-  //ospf.ospf_un.un_hello.hello_options &= 0xef;
-
   // Monta o pacote com os dados
   memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
-  const int IP_HDR_LEN = ip.ihl * 4;
   memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
-  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(struct ospfhdr));
+  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, OSPF_HDR_LEN);
+
+  int size = ETHER_HDR_LEN + IP_HDR_LEN + OSPF_HDR_LEN;
 
   struct sockaddr_ll destAddr;
   destAddr.sll_family = htons(PF_PACKET);
@@ -179,51 +181,9 @@ void answer_to_ospf_hello(int sockt, ether_header& ethernet, iphdr& ip, ospfhdr&
   destAddr.sll_ifindex = 2;
 
   memcpy(&destAddr.sll_addr, &ethernet.ether_shost, ETH_ALEN);
-  std::cout << "Answering...";
+  std::cout << "Sending OSPF HELLO...";
 
-  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(struct ospfhdr);
   if (sendto(sockt, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
-  {
-    error();
-    return;
-  }
-
-  ok();
-}
-
-
-void answer_to_ospf_db(int socket, ether_header& ethernet, iphdr& ip, ospfhdr& ospf)
-{
-  u_char buff[ETHER_MAX_LEN];
-
-  // Altera os headers pro pacote de resposta
-
-  memcpy(ethernet.ether_dhost, ethernet.ether_shost, 6);
-  memcpy(ethernet.ether_shost, ifr.ifr_hwaddr.sa_data, 6);
-
-  ip.daddr = ip.saddr;
-  ip.saddr = ip.saddr;
-
-  cout << ip_to_str(ip);
-
-  // Monta o pacote com os dados
-
-  memcpy(&buff[0], &ethernet, ETHER_HDR_LEN);
-  const int IP_HDR_LEN = ip.ihl * 4;
-  memcpy(&buff[ETHER_HDR_LEN], &ip, IP_HDR_LEN);
-  memcpy(&buff[ETHER_HDR_LEN + IP_HDR_LEN], &ospf, sizeof(ospfhdr));
-
-  struct sockaddr_ll destAddr;
-  destAddr.sll_family = htons(PF_PACKET);
-  destAddr.sll_protocol = htons(ETH_P_ALL);
-  destAddr.sll_halen = ETH_ALEN;
-  destAddr.sll_ifindex = 2;
-
-  memcpy(&destAddr.sll_addr, ethernet.ether_shost, ETH_ALEN);
-  std::cout << green << "Answering..." << std::endl;
-
-  int size = ETHER_HDR_LEN + IP_HDR_LEN + sizeof(ospfhdr);
-  if (sendto(socket, buff, size, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_ll)) < 0)
   {
     error();
     return;
