@@ -247,7 +247,7 @@ void answer_hello(int sockt, const ether_header& ethernet, const iphdr& ip, cons
     else
       ok();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(ospf_rep.ospf_hello.hello_helloint * 1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(ntohs(ospf_rep.ospf_hello.hello_helloint) * 1000));
   }
 }
 
@@ -336,6 +336,6 @@ void answer_db(int sockt, const ether_header& ethernet, const iphdr& ip, const o
     else
       ok();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(ospf_rep.ospf_hello.hello_helloint * 1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
 }
